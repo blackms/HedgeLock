@@ -56,7 +56,7 @@ else
 fi
 
 # Get commits since last tag (non-interactive)
-COMMITS=$(git log --oneline --no-pager "${LATEST_TAG}..HEAD" 2>/dev/null || git log --oneline --no-pager)
+COMMITS=$(git --no-pager log --oneline "${LATEST_TAG}..HEAD" 2>/dev/null || git --no-pager log --oneline)
 
 # Determine version bump
 HAS_BREAKING=false
@@ -100,7 +100,7 @@ log "Step 3: Updating release files"
 
 # Generate changelog
 CHANGELOG_ENTRY="## ${NEW_VERSION} - $(date +%Y-%m-%d)\n\n"
-CHANGELOG_ENTRY+=$(git log --no-pager --pretty=format:"- %s (%h)" "${LATEST_TAG}..HEAD" 2>/dev/null || git log --no-pager --pretty=format:"- %s (%h)" --max-count=10)
+CHANGELOG_ENTRY+=$(git --no-pager log --pretty=format:"- %s (%h)" "${LATEST_TAG}..HEAD" 2>/dev/null || git --no-pager log --pretty=format:"- %s (%h)" --max-count=10)
 CHANGELOG_ENTRY+="\n\n"
 
 # Update CHANGELOG.md
@@ -153,7 +153,7 @@ log "Step 5: Creating GitHub release"
 
 # Generate release notes
 RELEASE_NOTES="## What's Changed\n\n"
-RELEASE_NOTES+=$(git log --no-pager --pretty=format:"* %s by @%an" "${LATEST_TAG}..${NEW_VERSION}" 2>/dev/null || echo "* Initial release")
+RELEASE_NOTES+=$(git --no-pager log --pretty=format:"* %s by @%an" "${LATEST_TAG}..${NEW_VERSION}" 2>/dev/null || echo "* Initial release")
 
 # Create the release
 gh release create "${NEW_VERSION}" \
