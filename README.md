@@ -1,5 +1,8 @@
 # HedgeLock MVP - Loan Control Loop
 
+[![CI/CD Pipeline](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml/badge.svg)](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/blackms/HedgeLock/branch/main/graph/badge.svg?token=f6b6c943-5a31-4967-8c30-003de02a6907)](https://codecov.io/gh/blackms/HedgeLock)
+
 A decentralized loan monitoring and management system with automated liquidation protection.
 
 ## Project Overview
