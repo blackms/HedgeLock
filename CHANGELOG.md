@@ -1,3 +1,9 @@
+## v0.1.2.0 - 2025-06-30
+
+- Merge branch 'feature/kafka-setup' (b5774eb)
+- feat: add Kafka messaging system with 4 topics (HL-00-5) (7e301bd)
+
+
 # Changelog
 
 All notable changes to HedgeLock will be documented in this file.
