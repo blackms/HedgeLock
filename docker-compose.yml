@@ -1,0 +1,171 @@
+version: '3.8'
+
+services:
+  # Data ingestion service
+  collector:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.collector
+    container_name: hedgelock-collector
+    environment:
+      - SERVICE_NAME=hedgelock-collector
+      - LOG_LEVEL=INFO
+      - BYBIT_API_KEY=${BYBIT_API_KEY:-}
+      - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
+      - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
+    ports:
+      - "8001:8000"
+    networks:
+      - hedgelock-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Risk calculation engine
+  risk-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.risk-engine
+    container_name: hedgelock-risk-engine
+    environment:
+      - SERVICE_NAME=hedgelock-risk-engine
+      - LOG_LEVEL=INFO
+      - LTV_TARGET_RATIO=40
+      - LTV_MAX_RATIO=50
+    ports:
+      - "8002:8000"
+    networks:
+      - hedgelock-network
+    depends_on:
+      - redis
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Trading execution service
+  hedger:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.hedger
+    container_name: hedgelock-hedger
+    environment:
+      - SERVICE_NAME=hedgelock-hedger
+      - LOG_LEVEL=INFO
+      - BYBIT_API_KEY=${BYBIT_API_KEY:-}
+      - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
+      - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
+      - MAX_ORDER_SIZE_BTC=10.0
+      - MAX_POSITION_SIZE_BTC=50.0
+    ports:
+      - "8003:8000"
+    networks:
+      - hedgelock-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Fund management service
+  treasury:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.treasury
+    container_name: hedgelock-treasury
+    environment:
+      - SERVICE_NAME=hedgelock-treasury
+      - LOG_LEVEL=INFO
+      - BYBIT_API_KEY=${BYBIT_API_KEY:-}
+      - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
+      - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
+      - MIN_BUFFER_PERCENT=5
+      - MAX_SINGLE_OPERATION_USD=10000
+    ports:
+      - "8004:8000"
+    networks:
+      - hedgelock-network
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Notification service
+  alert:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.alert
+    container_name: hedgelock-alert
+    environment:
+      - SERVICE_NAME=hedgelock-alert
+      - LOG_LEVEL=INFO
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+    ports:
+      - "8005:8000"
+    networks:
+      - hedgelock-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: hedgelock-postgres
+    environment:
+      - POSTGRES_USER=hedgelock
+      - POSTGRES_PASSWORD=hedgelock
+      - POSTGRES_DB=hedgelock
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - hedgelock-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hedgelock"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: hedgelock-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - hedgelock-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  hedgelock-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:

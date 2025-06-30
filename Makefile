@@ -84,3 +84,38 @@ release:
 		exit 1; \
 	fi
 	./scripts/release.sh $(BRANCH)
+
+# Docker Compose commands
+compose-up:
+	docker compose up -d
+
+compose-down:
+	docker compose down
+
+compose-logs:
+	docker compose logs -f
+
+compose-build:
+	docker compose build
+
+compose-ps:
+	docker compose ps
+
+compose-restart:
+	docker compose restart
+
+# Service-specific logs
+logs-collector:
+	docker compose logs -f collector
+
+logs-risk:
+	docker compose logs -f risk-engine
+
+logs-hedger:
+	docker compose logs -f hedger
+
+logs-treasury:
+	docker compose logs -f treasury
+
+logs-alert:
+	docker compose logs -f alert
