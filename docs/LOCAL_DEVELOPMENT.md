@@ -57,6 +57,9 @@ The Docker Compose setup includes all five HedgeLock microservices plus supporti
 |---------|------|-------------|
 | postgres | 5432 | PostgreSQL database |
 | redis | 6379 | Redis cache and state store |
+| kafka | 9092 | Apache Kafka message broker |
+| zookeeper | 2181 | Kafka coordination service |
+| kafka-ui | 8080 | Web UI for Kafka monitoring |
 
 ## Service Endpoints
 
@@ -197,10 +200,48 @@ docker compose down -v
 - Check health endpoint: `curl http://localhost:<port>/health`
 - Review service logs for errors
 
+## Kafka Management
+
+### Viewing Kafka Topics
+
+The system automatically creates four topics on startup:
+- `account_raw` - Raw account data from Bybit
+- `risk_state` - Calculated risk states and LTV
+- `hedge_trades` - Hedge trade commands
+- `treasury_actions` - Treasury fund movements
+
+To list all topics:
+```bash
+docker exec hedgelock-kafka kafka-topics --bootstrap-server localhost:29092 --list
+# Or using Make:
+make kafka-topics
+```
+
+### Kafka UI
+
+Access the Kafka UI at http://localhost:8080 to:
+- Browse topics and messages
+- Monitor consumer groups
+- View broker health
+- Inspect message content
+
+### Testing Kafka
+
+To produce a test message:
+```bash
+docker exec -it hedgelock-kafka kafka-console-producer --bootstrap-server localhost:29092 --topic account_raw
+# Type your message and press Ctrl+D
+```
+
+To consume messages:
+```bash
+docker exec -it hedgelock-kafka kafka-console-consumer --bootstrap-server localhost:29092 --topic account_raw --from-beginning
+```
+
 ## Next Steps
 
 1. Implement real Bybit WebSocket connections in collector
-2. Add Kafka for inter-service communication
+2. Connect services to Kafka for inter-service communication
 3. Implement actual trading logic in hedger
 4. Connect real notification channels in alert
 5. Add comprehensive monitoring with Prometheus/Grafana

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Apache Kafka and Zookeeper services to docker-compose.yml (HL-00-5)
+- Automatic creation of 4 Kafka topics: account_raw, risk_state, hedge_trades, treasury_actions
+- Kafka UI for monitoring topics and messages at http://localhost:8080
+- Kafka management commands in Makefile (kafka-topics, kafka-describe-topics, etc.)
+- Kafka documentation in LOCAL_DEVELOPMENT.md
 
 ### Changed
 
