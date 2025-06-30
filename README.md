@@ -44,6 +44,7 @@ The dev container includes:
 - Python 3.11
 - PostgreSQL 15
 - Redis
+- Apache Kafka with Zookeeper
 - All required development tools
 
 ### Manual Setup

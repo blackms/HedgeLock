@@ -13,6 +13,19 @@ help:
 	@echo "  clean         Clean up generated files"
 	@echo "  docker-build  Build Docker image for dummy service"
 	@echo "  docker-run    Run dummy service in Docker"
+	@echo ""
+	@echo "Docker Compose commands:"
+	@echo "  compose-up    Start all services"
+	@echo "  compose-down  Stop all services"
+	@echo "  compose-logs  View logs for all services"
+	@echo "  compose-ps    Show service status"
+	@echo ""
+	@echo "Kafka commands:"
+	@echo "  kafka-topics  List all Kafka topics"
+	@echo "  kafka-describe-topics  Describe all topics"
+	@echo "  kafka-consumer-groups  List consumer groups"
+	@echo "  kafka-produce-test     Send test message"
+	@echo "  kafka-consume-test     Read test messages"
 
 # Install dependencies
 install:
@@ -119,3 +132,26 @@ logs-treasury:
 
 logs-alert:
 	docker compose logs -f alert
+
+logs-kafka:
+	docker compose logs -f kafka
+
+logs-zookeeper:
+	docker compose logs -f zookeeper
+
+# Kafka commands
+kafka-topics:
+	docker exec hedgelock-kafka kafka-topics --bootstrap-server localhost:29092 --list
+
+kafka-describe-topics:
+	docker exec hedgelock-kafka kafka-topics --bootstrap-server localhost:29092 --describe
+
+kafka-consumer-groups:
+	docker exec hedgelock-kafka kafka-consumer-groups --bootstrap-server localhost:29092 --list
+
+kafka-produce-test:
+	@echo "Enter your message and press Ctrl+D when done:"
+	@docker exec -it hedgelock-kafka kafka-console-producer --bootstrap-server localhost:29092 --topic account_raw
+
+kafka-consume-test:
+	docker exec -it hedgelock-kafka kafka-console-consumer --bootstrap-server localhost:29092 --topic account_raw --from-beginning --max-messages 10
