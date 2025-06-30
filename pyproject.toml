@@ -32,6 +32,8 @@ flake8 = "^7.0.0"
 mypy = "^1.8.0"
 pre-commit = "^3.6.0"
 ipykernel = "^6.29.0"
+types-redis = "^4.6.0"
+types-aiokafka = "^0.8.0"
 
 [tool.black]
 line-length = 88
@@ -59,6 +61,7 @@ minversion = "7.0"
 addopts = "-ra -q --strict-markers --cov=hedgelock --cov-report=term-missing"
 testpaths = ["tests"]
 pythonpath = ["src"]
+asyncio_mode = "auto"
 
 [build-system]
 requires = ["poetry-core"]
