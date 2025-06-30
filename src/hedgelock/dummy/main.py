@@ -33,7 +33,7 @@ class DummyService:
         """Start the dummy service."""
         logger.info("Starting dummy service...")
         self.is_running = True
-        
+
         while self.is_running:
             await asyncio.sleep(5)
             self.message_count += 1

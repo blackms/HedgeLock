@@ -1,5 +1,7 @@
 """Tests for the dummy service."""
 
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
@@ -21,18 +23,18 @@ class TestDummyService:
     async def test_service_start_stop(self) -> None:
         """Test service can start and stop."""
         service = DummyService()
-        
+
         # Start service in background
         start_task = asyncio.create_task(service.start())
-        
+
         # Give it a moment to start
         await asyncio.sleep(0.1)
         assert service.is_running is True
-        
+
         # Stop service
         await service.stop()
         assert service.is_running is False
-        
+
         # Cancel the start task
         start_task.cancel()
         try:
@@ -44,7 +46,7 @@ class TestDummyService:
         """Test getting service statistics."""
         service = DummyService()
         stats = service.get_stats()
-        
+
         assert stats["message_count"] == 0
         assert stats["is_running"] == 0
 
@@ -57,7 +59,7 @@ class TestAPI:
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["status"] == "healthy"
             assert data["service"] == "hedgelock-dummy"
@@ -68,7 +70,7 @@ class TestAPI:
         with TestClient(app) as client:
             response = client.get("/stats")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert "message_count" in data
             assert "is_running" in data
@@ -79,6 +81,3 @@ class TestAPI:
         # Note: This would normally test against a running instance
         # For unit tests, we use TestClient instead
         pass
-
-
-import asyncio
