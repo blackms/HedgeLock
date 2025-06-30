@@ -76,3 +76,11 @@ ci: lint test
 # Generate Poetry lock file
 lock:
 	poetry lock --no-update
+
+# Release commands
+release:
+	@if [ -z "$(BRANCH)" ]; then \
+		echo "Usage: make release BRANCH=feature/branch-name"; \
+		exit 1; \
+	fi
+	./scripts/release.sh $(BRANCH)
