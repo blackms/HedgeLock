@@ -22,7 +22,7 @@ HedgeLock implements a control loop for cryptocurrency-backed loans, providing:
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/blackms/HedgeLock.git
    cd HedgeLock
    ```
 
