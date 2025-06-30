@@ -1,6 +1,6 @@
 {
   "name": "hedgelock",
-  "version": "0.1.0",
+  "version": "0.1.1.0",
   "description": "HedgeLock MVP - Loan Control Loop",
   "private": true,
   "scripts": {

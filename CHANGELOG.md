@@ -19,6 +19,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.1.1.0] - 2024-12-30
+
+### Added
+- Docker Compose skeleton for local development (HL-00-4)
+- Stub implementations for all 5 microservices (Collector, RiskEngine, Hedger, Treasury, Alert)
+- PostgreSQL and Redis services in docker-compose.yml
+- Comprehensive .env.example with all configuration options
+- LOCAL_DEVELOPMENT.md documentation
+- Docker Compose commands in Makefile
+- CI/CD and Codecov badges in README
+
+### Fixed
+- Trivy security scanner configuration to use correct image tags
+- Black formatting for all Python files
+
+### Changed
+- Updated CI workflow to handle missing Codecov token gracefully
+- Set Codecov fail_ci_if_error to false
+
+### Documentation
+- Added Codecov setup guide
+- Added instructions for using GitHub secrets
+
 ## [0.1.0.0] - 2024-12-30
 
 ### Added
