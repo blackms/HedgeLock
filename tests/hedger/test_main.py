@@ -90,8 +90,8 @@ class TestHedgerService:
         assert stats["total_orders"] == 5
         assert stats["active_orders"] == 0  # All orders are FILLED in test
         assert stats["is_running"] is False
-        assert stats["max_order_size_btc"] == 10.0
-        assert stats["max_position_size_btc"] == 50.0
+        assert stats["max_order_size"] == 10.0
+        assert stats["max_position_size"] == 50.0
         assert stats["stub_mode"] is True
 
 
