@@ -1,3 +1,10 @@
+## v0.1.3.1 - 2025-07-01
+
+- style: apply Black formatter to all Python files (ce87e32)
+  - Format all test and source files with Black
+  - Fix line length and spacing issues
+  - Ensure consistent code style across the project
+
 ## v0.1.3.0 - 2025-07-01
 
 - feat: implement pytest coverage with 90% threshold and product wiki (0f142cd)
