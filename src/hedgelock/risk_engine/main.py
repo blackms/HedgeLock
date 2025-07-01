@@ -5,7 +5,7 @@ import logging
 import os
 import random
 from decimal import Decimal
-from typing import Dict
+from typing import Any, Dict
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -89,7 +89,7 @@ class RiskEngineService:
             required_hedge=max(0, random.uniform(-0.5, 0.5)),
         )
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get service statistics."""
         return {
             "calculation_count": self.calculation_count,
@@ -138,7 +138,7 @@ async def get_risk_state() -> RiskState:
 
 
 @app.get("/stats")
-async def get_stats() -> Dict[str, any]:
+async def get_stats() -> Dict[str, Any]:
     """Get service statistics."""
     return service.get_stats()
 

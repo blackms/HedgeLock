@@ -4,7 +4,7 @@ import asyncio
 import logging
 import os
 import random
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -84,7 +84,7 @@ class HedgerService:
             status="FILLED",
         )
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get service statistics."""
         return {
             "order_count": self.order_count,
@@ -135,7 +135,7 @@ async def get_orders() -> List[Order]:
 
 
 @app.get("/stats")
-async def get_stats() -> Dict[str, any]:
+async def get_stats() -> Dict[str, Any]:
     """Get service statistics."""
     return service.get_stats()
 

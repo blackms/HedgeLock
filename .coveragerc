@@ -1,0 +1,35 @@
+[run]
+source = src/hedgelock
+omit = 
+    */tests/*
+    */test_*
+    */__init__.py
+    */migrations/*
+    */config/*
+    */venv/*
+    */.venv/*
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+fail_under = 90
+
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @abc.abstractmethod
+    class .*\(Protocol\):
+    class .*\(ABC\):
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml

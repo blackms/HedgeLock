@@ -1,0 +1,82 @@
+graph TB
+    subgraph "External Systems"
+        EX[Exchanges<br/>Bybit, Binance]
+        LP[Loan Protocols<br/>Aave, Compound]
+        MF[Market Feeds]
+    end
+
+    subgraph "HedgeLock Core"
+        subgraph "Data Layer"
+            COL[Collector Service]
+            KAF[Kafka Message Bus]
+        end
+
+        subgraph "Processing Layer"
+            RE[Risk Engine]
+            HED[Hedger Service]
+            TRE[Treasury Service]
+        end
+
+        subgraph "Control Layer"
+            ALT[Alert Service]
+            API[API Gateway]
+        end
+
+        subgraph "Storage"
+            PG[PostgreSQL]
+            RD[Redis Cache]
+        end
+    end
+
+    subgraph "User Interface"
+        WEB[Web Dashboard]
+        MOB[Mobile App]
+        TG[Telegram Bot]
+    end
+
+    %% External connections
+    EX --> COL
+    LP --> COL
+    MF --> COL
+
+    %% Internal data flow
+    COL --> KAF
+    KAF --> RE
+    KAF --> HED
+    KAF --> TRE
+    
+    RE --> ALT
+    HED --> ALT
+    TRE --> ALT
+
+    %% Storage connections
+    COL --> PG
+    RE --> PG
+    HED --> PG
+    TRE --> PG
+    
+    RE --> RD
+    API --> RD
+
+    %% User connections
+    API --> WEB
+    API --> MOB
+    ALT --> TG
+
+    %% Control signals
+    RE -.->|risk signals| HED
+    RE -.->|treasury signals| TRE
+
+    classDef external fill:#f9f,stroke:#333,stroke-width:2px
+    classDef data fill:#bbf,stroke:#333,stroke-width:2px
+    classDef processing fill:#bfb,stroke:#333,stroke-width:2px
+    classDef control fill:#fbf,stroke:#333,stroke-width:2px
+    classDef storage fill:#fbb,stroke:#333,stroke-width:2px
+    classDef ui fill:#ffb,stroke:#333,stroke-width:2px
+
+    class EX,LP,MF external
+    class COL,KAF data
+    class RE,HED,TRE processing
+    class ALT,API control
+    class PG,RD storage
+    class WEB,MOB,TG ui

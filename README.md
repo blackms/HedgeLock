@@ -13,6 +13,8 @@ HedgeLock implements a control loop for cryptocurrency-backed loans, providing:
 - Liquidation prevention through hedging strategies
 - Multi-chain collateral support
 
+📚 **[View Product Wiki](docs/PRODUCT_WIKI.md)** - Comprehensive documentation with glossary, architecture diagrams, and team collaboration guide.
+
 ## Development Setup
 
 ### Prerequisites

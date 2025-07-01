@@ -5,7 +5,7 @@ import logging
 import os
 import random
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -97,7 +97,7 @@ class AlertService:
             delivered=random.random() > 0.1,  # 90% delivery success
         )
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get service statistics."""
         delivered_count = sum(1 for a in self.alerts if a.delivered)
         critical_count = sum(1 for a in self.alerts if a.severity == "CRITICAL")
@@ -157,7 +157,7 @@ async def get_alerts() -> List[Alert]:
 
 
 @app.get("/stats")
-async def get_stats() -> Dict[str, any]:
+async def get_stats() -> Dict[str, Any]:
     """Get service statistics."""
     return service.get_stats()
 

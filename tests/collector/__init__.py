@@ -1,0 +1,1 @@
+"""Tests for collector module."""

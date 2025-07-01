@@ -5,7 +5,7 @@ import logging
 import os
 import random
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -84,7 +84,7 @@ class TreasuryService:
             description="Stub treasury action for testing",
         )
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get service statistics."""
         total_repaid = sum(
             a.amount_usd for a in self.actions if a.action_type == "REPAY_PRINCIPAL"
@@ -143,7 +143,7 @@ async def get_actions() -> List[TreasuryAction]:
 
 
 @app.get("/stats")
-async def get_stats() -> Dict[str, any]:
+async def get_stats() -> Dict[str, Any]:
     """Get service statistics."""
     return service.get_stats()
 

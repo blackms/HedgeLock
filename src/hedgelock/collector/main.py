@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import os
-from typing import Dict
+from typing import Any, Dict
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -51,7 +51,7 @@ class CollectorService:
         logger.info("Stopping Collector service...")
         self.is_running = False
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get service statistics."""
         return {
             "message_count": self.message_count,
@@ -92,7 +92,7 @@ async def health_check() -> HealthResponse:
 
 
 @app.get("/stats")
-async def get_stats() -> Dict[str, any]:
+async def get_stats() -> Dict[str, Any]:
     """Get service statistics."""
     return service.get_stats()
 

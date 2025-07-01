@@ -58,7 +58,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --cov=hedgelock --cov-report=term-missing"
+addopts = "-ra -q --strict-markers --cov=src/hedgelock --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=90"
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
