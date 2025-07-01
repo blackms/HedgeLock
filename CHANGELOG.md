@@ -1,3 +1,13 @@
+## v0.1.3.0 - 2025-07-01
+
+- feat: implement pytest coverage with 90% threshold and product wiki (0f142cd)
+  - Set up pytest configuration with 90% coverage requirement (HL-00-6)
+  - Add .coveragerc for detailed coverage settings
+  - Update CI/CD pipeline to enforce coverage threshold
+  - Create comprehensive test suite achieving 92.82% coverage
+  - Add product wiki with glossary and architecture diagrams (HL-00-7)
+  - Fix type annotations in all service modules
+
 ## v0.1.2.0 - 2025-06-30
 
 - Merge branch 'feature/kafka-setup' (b5774eb)
