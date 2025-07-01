@@ -53,9 +53,9 @@ class TestRiskEngineService:
     def test_calculate_stub_risk(self) -> None:
         """Test calculating stub risk metrics."""
         service = RiskEngineService()
-        
+
         risk_state = service._calculate_stub_risk()
-        
+
         assert isinstance(risk_state, RiskState)
         assert 30.0 <= risk_state.ltv_ratio <= 60.0
         assert risk_state.risk_level in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
@@ -66,7 +66,7 @@ class TestRiskEngineService:
         """Test getting service statistics."""
         service = RiskEngineService()
         service.calculation_count = 42
-        
+
         stats = service.get_stats()
 
         assert stats["calculation_count"] == 42
@@ -99,7 +99,7 @@ class TestAPI:
         with TestClient(app) as client:
             response = client.get("/risk-state")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert "ltv_ratio" in data
             assert "risk_level" in data
@@ -120,18 +120,22 @@ class TestAPI:
             assert "ltv_max_ratio" in data
             assert "stub_mode" in data
 
-    @patch.dict("os.environ", {"LTV_TARGET_RATIO": "38", "LTV_MAX_RATIO": "48", "LOG_LEVEL": "DEBUG"})
+    @patch.dict(
+        "os.environ",
+        {"LTV_TARGET_RATIO": "38", "LTV_MAX_RATIO": "48", "LOG_LEVEL": "DEBUG"},
+    )
     def test_health_check_with_custom_env(self) -> None:
         """Test health check with custom environment settings."""
         # Need to recreate the service to pick up the env vars
         from hedgelock.risk_engine.main import service
+
         service.ltv_target = 38.0
         service.ltv_max = 48.0
-        
+
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["environment"]["ltv_target_ratio"] == "38.0"
             assert data["environment"]["ltv_max_ratio"] == "48.0"

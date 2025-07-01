@@ -22,7 +22,9 @@ class TestTreasuryService:
         assert service.min_buffer == 5.0
         assert service.max_operation == 10000.0
 
-    @patch.dict("os.environ", {"MIN_BUFFER_PERCENT": "3", "MAX_SINGLE_OPERATION_USD": "5000"})
+    @patch.dict(
+        "os.environ", {"MIN_BUFFER_PERCENT": "3", "MAX_SINGLE_OPERATION_USD": "5000"}
+    )
     def test_service_initialization_with_env(self) -> None:
         """Test service initialization with environment variables."""
         service = TreasuryService()
@@ -56,9 +58,9 @@ class TestTreasuryService:
         """Test creating a stub treasury action."""
         service = TreasuryService()
         service.action_count = 5
-        
+
         action = service._create_stub_action()
-        
+
         assert action.action_id == "TRE-000005"
         assert isinstance(action.timestamp, datetime)
         assert action.action_type in ["Deposit", "Withdraw", "Rebalance", "Interest"]
@@ -69,18 +71,20 @@ class TestTreasuryService:
     def test_get_stats(self) -> None:
         """Test getting service statistics."""
         service = TreasuryService()
-        
+
         # Add some test actions
         for i in range(10):
             action = TreasuryAction(
                 action_id=f"TRE-{i:06d}",
                 timestamp=datetime.utcnow(),
-                action_type="Deposit" if i < 4 else "Withdraw" if i < 7 else "Rebalance",
+                action_type=(
+                    "Deposit" if i < 4 else "Withdraw" if i < 7 else "Rebalance"
+                ),
                 amount_usd=1000.0,
-                description="Test action"
+                description="Test action",
             )
             service.actions.append(action)
-        
+
         service.action_count = 10
         stats = service.get_stats()
 
@@ -123,7 +127,7 @@ class TestAPI:
     def test_get_actions_with_data(self) -> None:
         """Test getting actions with existing data."""
         from hedgelock.treasury.main import service
-        
+
         # Add some test actions
         for i in range(25):
             action = TreasuryAction(
@@ -131,14 +135,14 @@ class TestAPI:
                 timestamp=datetime.utcnow(),
                 action_type="Deposit",
                 amount_usd=1000.0,
-                description=f"Action {i}"
+                description=f"Action {i}",
             )
             service.actions.append(action)
-        
+
         with TestClient(app) as client:
             response = client.get("/actions")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert len(data) == 20  # Should only return last 20
             assert data[0]["action_id"] == "TRE-000005"  # First of last 20
@@ -166,24 +170,32 @@ class TestAPI:
         with TestClient(app) as client:
             response = client.post("/simulate-deposit", json={"amount": 5000.0})
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["status"] == "simulated"
             assert "action_id" in data
             assert data["action_id"].startswith("TRE-")
 
-    @patch.dict("os.environ", {"MIN_BUFFER_PERCENT": "2.5", "MAX_SINGLE_OPERATION_USD": "7500", "LOG_LEVEL": "DEBUG"})
+    @patch.dict(
+        "os.environ",
+        {
+            "MIN_BUFFER_PERCENT": "2.5",
+            "MAX_SINGLE_OPERATION_USD": "7500",
+            "LOG_LEVEL": "DEBUG",
+        },
+    )
     def test_health_check_with_custom_env(self) -> None:
         """Test health check with custom environment settings."""
         # Need to recreate the service to pick up the env vars
         from hedgelock.treasury.main import service
+
         service.min_buffer = 2.5
         service.max_operation = 7500.0
-        
+
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["environment"]["min_buffer_percent"] == "2.5"
             assert data["environment"]["max_single_operation_usd"] == "7500.0"

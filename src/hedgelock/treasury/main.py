@@ -50,8 +50,7 @@ class TreasuryService:
         """Start the treasury service."""
         logger.info("Starting Treasury service...")
         logger.info(
-            f"Min buffer: {self.min_buffer}%, "
-            f"Max operation: ${self.max_operation}"
+            f"Min buffer: {self.min_buffer}%, " f"Max operation: ${self.max_operation}"
         )
         self.is_running = True
 

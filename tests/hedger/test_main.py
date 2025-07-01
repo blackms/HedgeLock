@@ -21,7 +21,9 @@ class TestHedgerService:
         assert service.max_order_size == 10.0
         assert service.max_position_size == 50.0
 
-    @patch.dict("os.environ", {"MAX_ORDER_SIZE_BTC": "5.0", "MAX_POSITION_SIZE_BTC": "25.0"})
+    @patch.dict(
+        "os.environ", {"MAX_ORDER_SIZE_BTC": "5.0", "MAX_POSITION_SIZE_BTC": "25.0"}
+    )
     def test_service_initialization_with_env(self) -> None:
         """Test service initialization with environment variables."""
         service = HedgerService()
@@ -55,9 +57,9 @@ class TestHedgerService:
         """Test creating a stub order."""
         service = HedgerService()
         service.order_count = 10
-        
+
         order = service._create_stub_order()
-        
+
         assert order.order_id == "ORD-000010"
         assert order.symbol in ["BTCUSDT", "ETHUSDT"]
         assert order.side in ["Buy", "Sell"]
@@ -68,7 +70,7 @@ class TestHedgerService:
     def test_get_stats(self) -> None:
         """Test getting service statistics."""
         service = HedgerService()
-        
+
         # Add some test orders
         for i in range(5):
             order = Order(
@@ -77,10 +79,10 @@ class TestHedgerService:
                 side="Buy" if i % 2 == 0 else "Sell",
                 size=1.0,
                 price=50000.0,
-                status="Filled" if i < 3 else "Cancelled"
+                status="Filled" if i < 3 else "Cancelled",
             )
             service.orders.append(order)
-        
+
         service.order_count = 5
         stats = service.get_stats()
 
@@ -124,7 +126,7 @@ class TestAPI:
     def test_get_orders_with_data(self) -> None:
         """Test getting orders with existing data."""
         from hedgelock.hedger.main import service
-        
+
         # Add some test orders
         for i in range(25):
             order = Order(
@@ -133,14 +135,14 @@ class TestAPI:
                 side="Buy",
                 size=1.0,
                 price=50000.0,
-                status="Filled"
+                status="Filled",
             )
             service.orders.append(order)
-        
+
         with TestClient(app) as client:
             response = client.get("/orders")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert len(data) == 20  # Should only return last 20
             assert data[0]["order_id"] == "ORD-000005"  # First of last 20
@@ -164,18 +166,26 @@ class TestAPI:
             assert "max_position_size_btc" in data
             assert "stub_mode" in data
 
-    @patch.dict("os.environ", {"MAX_ORDER_SIZE_BTC": "2.5", "MAX_POSITION_SIZE_BTC": "15.0", "LOG_LEVEL": "DEBUG"})
+    @patch.dict(
+        "os.environ",
+        {
+            "MAX_ORDER_SIZE_BTC": "2.5",
+            "MAX_POSITION_SIZE_BTC": "15.0",
+            "LOG_LEVEL": "DEBUG",
+        },
+    )
     def test_health_check_with_custom_env(self) -> None:
         """Test health check with custom environment settings."""
         # Need to recreate the service to pick up the env vars
         from hedgelock.hedger.main import service
+
         service.max_order_size = 2.5
         service.max_position_size = 15.0
-        
+
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["environment"]["max_order_size_btc"] == "2.5"
             assert data["environment"]["max_position_size_btc"] == "15.0"

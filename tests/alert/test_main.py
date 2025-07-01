@@ -45,7 +45,10 @@ class TestAlertService:
         except asyncio.CancelledError:
             pass
 
-    @patch.dict("os.environ", {"TELEGRAM_BOT_TOKEN": "test_token", "SMTP_USER": "test@email.com"})
+    @patch.dict(
+        "os.environ",
+        {"TELEGRAM_BOT_TOKEN": "test_token", "SMTP_USER": "test@email.com"},
+    )
     def test_service_with_enabled_channels(self) -> None:
         """Test service initialization with enabled notification channels."""
         service = AlertService()
@@ -56,9 +59,9 @@ class TestAlertService:
         """Test creating a stub alert."""
         service = AlertService()
         service.alert_count = 42
-        
+
         alert = service._create_stub_alert()
-        
+
         assert alert.alert_id == "ALT-000042"
         assert isinstance(alert.timestamp, datetime)
         assert alert.severity in ["INFO", "WARNING", "CRITICAL"]
@@ -89,7 +92,7 @@ class TestAlertService:
     def test_get_stats_with_alerts(self) -> None:
         """Test getting stats with various alerts."""
         service = AlertService()
-        
+
         # Create some test alerts
         for i in range(10):
             alert = Alert(
@@ -102,7 +105,7 @@ class TestAlertService:
                 delivered=i < 8,  # 80% delivered
             )
             service.alerts.append(alert)
-        
+
         service.alert_count = 10
         stats = service.get_stats()
 
@@ -142,7 +145,7 @@ class TestAPI:
         """Test getting alerts with existing data."""
         # Create a custom service with alerts
         from hedgelock.alert.main import service
-        
+
         # Add some test alerts
         for i in range(25):
             alert = Alert(
@@ -155,11 +158,11 @@ class TestAPI:
                 delivered=True,
             )
             service.alerts.append(alert)
-        
+
         with TestClient(app) as client:
             response = client.get("/alerts")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert len(data) == 20  # Should only return last 20
             assert data[0]["alert_id"] == "ALT-000005"  # First of last 20
@@ -187,7 +190,7 @@ class TestAPI:
         with TestClient(app) as client:
             response = client.post("/test-alert")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["status"] == "sent"
             assert "alert_id" in data
@@ -198,11 +201,12 @@ class TestAPI:
         """Test health check with Telegram enabled."""
         # Need to recreate the service to pick up the env var
         from hedgelock.alert.main import service
+
         service.telegram_enabled = True
-        
+
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["environment"]["telegram_enabled"] == "True"

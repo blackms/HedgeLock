@@ -94,12 +94,13 @@ class TestAPI:
         """Test health check with custom environment settings."""
         # Need to recreate the service to pick up the env var
         from hedgelock.collector.main import service
+
         service.bybit_testnet = False
-        
+
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["environment"]["bybit_testnet"] == "False"
             assert data["environment"]["log_level"] == "DEBUG"
