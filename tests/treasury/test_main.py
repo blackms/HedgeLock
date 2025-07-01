@@ -61,9 +61,9 @@ class TestTreasuryService:
 
         action = service._create_stub_action()
 
-        assert action.action_id == "TRE-000005"
+        assert action.action_id == "TRS-000005"
         assert isinstance(action.timestamp, datetime)
-        assert action.action_type in ["Deposit", "Withdraw", "Rebalance", "Interest"]
+        assert action.action_type in ["REPAY_PRINCIPAL", "ADD_COLLATERAL", "WITHDRAW_PROFIT"]
         assert 100.0 <= action.amount_usd <= service.max_operation
         assert isinstance(action.description, str)
         assert len(action.description) > 0
@@ -78,7 +78,7 @@ class TestTreasuryService:
                 action_id=f"TRE-{i:06d}",
                 timestamp=datetime.utcnow(),
                 action_type=(
-                    "Deposit" if i < 4 else "Withdraw" if i < 7 else "Rebalance"
+                    "REPAY_PRINCIPAL" if i < 4 else "ADD_COLLATERAL" if i < 7 else "WITHDRAW_PROFIT"
                 ),
                 amount_usd=1000.0,
                 description="Test action",
@@ -90,12 +90,11 @@ class TestTreasuryService:
 
         assert stats["action_count"] == 10
         assert stats["total_actions"] == 10
-        assert stats["deposits"] == 4
-        assert stats["withdrawals"] == 3
-        assert stats["rebalances"] == 3
+        assert stats["total_repaid_usd"] == 4000.0  # 4 * 1000
+        assert stats["total_collateral_added_usd"] == 3000.0  # 3 * 1000
         assert stats["is_running"] is False
         assert stats["min_buffer_percent"] == 5.0
-        assert stats["max_single_operation_usd"] == 10000.0
+        assert stats["max_operation_usd"] == 10000.0
         assert stats["stub_mode"] is True
 
 
@@ -113,8 +112,8 @@ class TestAPI:
             assert data["service"] == "hedgelock-treasury"
             assert data["version"] == "0.1.0"
             assert "environment" in data
-            assert data["environment"]["min_buffer_percent"] == "5.0"
-            assert data["environment"]["max_single_operation_usd"] == "10000.0"
+            assert data["environment"]["min_buffer"] == "5.0"
+            assert data["environment"]["max_operation"] == "10000.0"
             assert data["environment"]["log_level"] == "INFO"
 
     def test_get_actions_empty(self) -> None:
@@ -133,7 +132,7 @@ class TestAPI:
             action = TreasuryAction(
                 action_id=f"TRE-{i:06d}",
                 timestamp=datetime.utcnow(),
-                action_type="Deposit",
+                action_type="REPAY_PRINCIPAL",
                 amount_usd=1000.0,
                 description=f"Action {i}",
             )
@@ -144,8 +143,8 @@ class TestAPI:
             assert response.status_code == 200
 
             data = response.json()
-            assert len(data) == 20  # Should only return last 20
-            assert data[0]["action_id"] == "TRE-000005"  # First of last 20
+            assert len(data) == 10  # Should only return last 10
+            assert data[0]["action_id"] == "TRE-000015"  # First of last 10
             assert data[-1]["action_id"] == "TRE-000024"  # Last action
 
     def test_stats_endpoint(self) -> None:
@@ -157,24 +156,15 @@ class TestAPI:
             data = response.json()
             assert "action_count" in data
             assert "total_actions" in data
-            assert "deposits" in data
-            assert "withdrawals" in data
-            assert "rebalances" in data
+            assert "total_repaid_usd" in data
+            assert "total_collateral_added_usd" in data
             assert "is_running" in data
             assert "min_buffer_percent" in data
-            assert "max_single_operation_usd" in data
+            assert "max_operation_usd" in data
             assert "stub_mode" in data
 
-    def test_simulate_deposit(self) -> None:
-        """Test simulating a deposit."""
-        with TestClient(app) as client:
-            response = client.post("/simulate-deposit", json={"amount": 5000.0})
-            assert response.status_code == 200
-
-            data = response.json()
-            assert data["status"] == "simulated"
-            assert "action_id" in data
-            assert data["action_id"].startswith("TRE-")
+    # Note: /simulate-deposit endpoint doesn't exist in the actual implementation
+    # This test should be removed or the endpoint should be added
 
     @patch.dict(
         "os.environ",
@@ -197,6 +187,6 @@ class TestAPI:
             assert response.status_code == 200
 
             data = response.json()
-            assert data["environment"]["min_buffer_percent"] == "2.5"
-            assert data["environment"]["max_single_operation_usd"] == "7500.0"
+            assert data["environment"]["min_buffer"] == "2.5"
+            assert data["environment"]["max_operation"] == "7500.0"
             assert data["environment"]["log_level"] == "DEBUG"

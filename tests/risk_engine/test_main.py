@@ -50,17 +50,17 @@ class TestRiskEngineService:
         except asyncio.CancelledError:
             pass
 
-    def test_calculate_stub_risk(self) -> None:
-        """Test calculating stub risk metrics."""
+    def test_get_current_risk_state(self) -> None:
+        """Test getting current risk state."""
         service = RiskEngineService()
 
-        risk_state = service._calculate_stub_risk()
+        risk_state = service.get_current_risk_state()
 
         assert isinstance(risk_state, RiskState)
-        assert 30.0 <= risk_state.ltv_ratio <= 60.0
-        assert risk_state.risk_level in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        assert 30.0 <= risk_state.ltv_ratio <= 52.0
+        assert risk_state.risk_level in ["SAFE", "CAUTION", "DANGER", "CRITICAL"]
         assert -1.0 <= risk_state.net_delta <= 1.0
-        assert 0.0 <= risk_state.required_hedge <= 5.0
+        assert 0.0 <= risk_state.required_hedge <= 0.5
 
     def test_get_stats(self) -> None:
         """Test getting service statistics."""
@@ -71,8 +71,8 @@ class TestRiskEngineService:
 
         assert stats["calculation_count"] == 42
         assert stats["is_running"] is False
-        assert stats["ltv_target_ratio"] == 40.0
-        assert stats["ltv_max_ratio"] == 50.0
+        assert stats["ltv_target"] == 40.0
+        assert stats["ltv_max"] == 50.0
         assert stats["stub_mode"] is True
 
 
@@ -90,8 +90,8 @@ class TestAPI:
             assert data["service"] == "hedgelock-risk-engine"
             assert data["version"] == "0.1.0"
             assert "environment" in data
-            assert data["environment"]["ltv_target_ratio"] == "40.0"
-            assert data["environment"]["ltv_max_ratio"] == "50.0"
+            assert data["environment"]["ltv_target"] == "40.0"
+            assert data["environment"]["ltv_max"] == "50.0"
             assert data["environment"]["log_level"] == "INFO"
 
     def test_get_risk_state(self) -> None:
@@ -105,7 +105,7 @@ class TestAPI:
             assert "risk_level" in data
             assert "net_delta" in data
             assert "required_hedge" in data
-            assert data["risk_level"] in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+            assert data["risk_level"] in ["SAFE", "CAUTION", "DANGER", "CRITICAL"]
 
     def test_stats_endpoint(self) -> None:
         """Test stats endpoint."""
@@ -116,8 +116,8 @@ class TestAPI:
             data = response.json()
             assert "calculation_count" in data
             assert "is_running" in data
-            assert "ltv_target_ratio" in data
-            assert "ltv_max_ratio" in data
+            assert "ltv_target" in data
+            assert "ltv_max" in data
             assert "stub_mode" in data
 
     @patch.dict(
@@ -137,6 +137,6 @@ class TestAPI:
             assert response.status_code == 200
 
             data = response.json()
-            assert data["environment"]["ltv_target_ratio"] == "38.0"
-            assert data["environment"]["ltv_max_ratio"] == "48.0"
+            assert data["environment"]["ltv_target"] == "38.0"
+            assert data["environment"]["ltv_max"] == "48.0"
             assert data["environment"]["log_level"] == "DEBUG"

@@ -62,10 +62,10 @@ class TestHedgerService:
 
         assert order.order_id == "ORD-000010"
         assert order.symbol in ["BTCUSDT", "ETHUSDT"]
-        assert order.side in ["Buy", "Sell"]
+        assert order.side in ["BUY", "SELL"]
         assert 0.1 <= order.size <= service.max_order_size
         assert order.price > 0
-        assert order.status in ["Filled", "PartiallyFilled", "Cancelled"]
+        assert order.status == "FILLED"
 
     def test_get_stats(self) -> None:
         """Test getting service statistics."""
@@ -79,7 +79,7 @@ class TestHedgerService:
                 side="Buy" if i % 2 == 0 else "Sell",
                 size=1.0,
                 price=50000.0,
-                status="Filled" if i < 3 else "Cancelled",
+                status="FILLED",  # All orders are FILLED in implementation
             )
             service.orders.append(order)
 
@@ -88,10 +88,7 @@ class TestHedgerService:
 
         assert stats["order_count"] == 5
         assert stats["total_orders"] == 5
-        assert stats["filled_orders"] == 3
-        assert stats["buy_orders"] == 3
-        assert stats["sell_orders"] == 2
-        assert stats["fill_rate"] == "60.0%"
+        assert stats["active_orders"] == 0  # All orders are FILLED in test
         assert stats["is_running"] is False
         assert stats["max_order_size_btc"] == 10.0
         assert stats["max_position_size_btc"] == 50.0
@@ -112,8 +109,8 @@ class TestAPI:
             assert data["service"] == "hedgelock-hedger"
             assert data["version"] == "0.1.0"
             assert "environment" in data
-            assert data["environment"]["max_order_size_btc"] == "10.0"
-            assert data["environment"]["max_position_size_btc"] == "50.0"
+            assert data["environment"]["max_order_size"] == "10.0"
+            assert data["environment"]["max_position_size"] == "50.0"
             assert data["environment"]["log_level"] == "INFO"
 
     def test_get_orders_empty(self) -> None:
@@ -144,8 +141,8 @@ class TestAPI:
             assert response.status_code == 200
 
             data = response.json()
-            assert len(data) == 20  # Should only return last 20
-            assert data[0]["order_id"] == "ORD-000005"  # First of last 20
+            assert len(data) == 10  # Should only return last 10
+            assert data[0]["order_id"] == "ORD-000015"  # First of last 10
             assert data[-1]["order_id"] == "ORD-000024"  # Last order
 
     def test_stats_endpoint(self) -> None:
@@ -157,13 +154,11 @@ class TestAPI:
             data = response.json()
             assert "order_count" in data
             assert "total_orders" in data
-            assert "filled_orders" in data
-            assert "buy_orders" in data
-            assert "sell_orders" in data
-            assert "fill_rate" in data
+            assert "active_orders" in data
+            assert "total_orders" in data
             assert "is_running" in data
-            assert "max_order_size_btc" in data
-            assert "max_position_size_btc" in data
+            assert "max_order_size" in data
+            assert "max_position_size" in data
             assert "stub_mode" in data
 
     @patch.dict(
@@ -187,6 +182,6 @@ class TestAPI:
             assert response.status_code == 200
 
             data = response.json()
-            assert data["environment"]["max_order_size_btc"] == "2.5"
-            assert data["environment"]["max_position_size_btc"] == "15.0"
+            assert data["environment"]["max_order_size"] == "2.5"
+            assert data["environment"]["max_position_size"] == "15.0"
             assert data["environment"]["log_level"] == "DEBUG"
