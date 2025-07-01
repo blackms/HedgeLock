@@ -63,7 +63,11 @@ class TestTreasuryService:
 
         assert action.action_id == "TRS-000005"
         assert isinstance(action.timestamp, datetime)
-        assert action.action_type in ["REPAY_PRINCIPAL", "ADD_COLLATERAL", "WITHDRAW_PROFIT"]
+        assert action.action_type in [
+            "REPAY_PRINCIPAL",
+            "ADD_COLLATERAL",
+            "WITHDRAW_PROFIT",
+        ]
         assert 100.0 <= action.amount_usd <= service.max_operation
         assert isinstance(action.description, str)
         assert len(action.description) > 0
@@ -78,7 +82,9 @@ class TestTreasuryService:
                 action_id=f"TRE-{i:06d}",
                 timestamp=datetime.utcnow(),
                 action_type=(
-                    "REPAY_PRINCIPAL" if i < 4 else "ADD_COLLATERAL" if i < 7 else "WITHDRAW_PROFIT"
+                    "REPAY_PRINCIPAL"
+                    if i < 4
+                    else "ADD_COLLATERAL" if i < 7 else "WITHDRAW_PROFIT"
                 ),
                 amount_usd=1000.0,
                 description="Test action",
