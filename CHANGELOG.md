@@ -1,3 +1,14 @@
+## v0.1.3.2 - 2025-07-01
+
+- fix: update tests to match actual service implementations (aa332cc)
+  - Fix hedger service tests to use correct order status values
+  - Fix risk_engine tests to match actual method names and risk levels
+  - Fix treasury tests to use correct action types and field names
+  - Update test expectations to match actual API response formats
+- fix: remove unused Decimal import from risk_engine module (9dc01ce)
+  - Remove unused import flagged by flake8
+  - Ensures clean linting checks in CI/CD
+
 ## v0.1.3.1 - 2025-07-01
 
 - style: apply Black formatter to all Python files (ce87e32)
