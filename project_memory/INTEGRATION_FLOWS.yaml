@@ -1,0 +1,57 @@
+main_system_flow:
+  intended_path:
+    1: "Exchange APIs → Collector → account_raw topic"
+    2: "account_raw topic → Risk Engine → risk_state topic"
+    3: "risk_state topic → Hedge Engine → hedge_trades topic"
+    4: "hedge_trades topic → Trade Executor → Exchange execution"
+    5: "All stages → Monitoring & Alerting"
+    
+  current_path:
+    1: "Exchange APIs → Collector → account_raw topic ✓"
+    2: "account_raw topic → [MISSING CONSUMER] ❌"
+    3: "risk_state topic → [NOT IMPLEMENTED] ❌"
+    4: "hedge_trades topic → [NOT IMPLEMENTED] ❌"
+    5: "Monitoring → [NOT IMPLEMENTED] ❌"
+    
+  integration_gaps:
+    critical:
+      - "account_raw topic has no consumers - data being produced but not processed"
+      - "No risk calculation engine to process position data"
+      - "No hedge execution to act on risk calculations"
+    
+    medium:
+      - "No monitoring/alerting for system health"
+      - "No schema validation on Kafka topics"
+      - "No dead letter queues for failed messages"
+      
+  next_integration_priority:
+    1: "Implement risk calculation engine consuming account_raw"
+    2: "Create monitoring dashboard showing data flow health"
+    3: "Implement hedge execution engine"
+
+data_schemas:
+  account_raw:
+    description: "Raw account and position data from exchange APIs"
+    expected_fields:
+      - "collateral_info"
+      - "loan_info" 
+      - "btc_perp_position"
+      - "timestamp"
+      - "source"
+      
+  risk_state:
+    description: "Processed risk calculations and hedge recommendations"
+    expected_fields:
+      - "portfolio_risk_score"
+      - "hedge_recommendations"
+      - "risk_alerts"
+      - "timestamp"
+      
+  hedge_trades:
+    description: "Specific hedge trade instructions for execution"
+    expected_fields:
+      - "instrument"
+      - "side"
+      - "quantity"
+      - "price_type"
+      - "risk_correlation_id"

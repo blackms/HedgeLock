@@ -1,0 +1,75 @@
+components:
+  kafka_infrastructure:
+    status: "IMPLEMENTED_NOT_INTEGRATED"
+    implementation_files: ["docker-compose.yml"]
+    integration_files: ["All services need Kafka connection configs"]
+    integration_todos: 
+      - "Add Kafka health checks to main application startup"
+      - "Create schema registry for topic validation"
+      - "Add monitoring for topic lag and throughput"
+    business_impact: "Enables event-driven architecture for real-time trading"
+    last_updated: "2025-07-07"
+    sprint: "HL-06-1"
+    
+  kafka_topics:
+    status: "IMPLEMENTED_NOT_INTEGRATED" 
+    implementation_files: ["Topic creation scripts"]
+    integration_files: ["Producer/consumer services"]
+    integration_todos:
+      - "Connect account_raw to risk calculation engine"
+      - "Connect risk_state to hedge execution engine"
+      - "Connect hedge_trades to exchange execution"
+    business_impact: "Data flow channels for trading decisions"
+    topics:
+      account_raw: "Raw account and position data from exchanges"
+      risk_state: "Processed risk calculations and alerts"
+      hedge_trades: "Hedge trade instructions for execution"
+    last_updated: "2025-07-07"
+    sprint: "HL-06-1"
+    
+  collector_v1:
+    status: "IMPLEMENTED_NOT_INTEGRATED"
+    implementation_files: ["collector service code", "unit tests"]
+    integration_files: ["risk_engine", "monitoring_dashboard"]
+    integration_todos:
+      - "Connect to risk calculation engine that consumes account_raw"
+      - "Add health monitoring and alerting"
+      - "Integration testing with downstream risk processing"
+    business_impact: "Real-time position and collateral monitoring"
+    data_sources:
+      - "/v5/account/collateral-info (5s polling)"
+      - "/v5/ins-loan/loan-info (5s polling)" 
+      - "BTC-PERP position WebSocket"
+    output_topic: "account_raw"
+    last_updated: "2025-07-07"
+    sprint: "HL-06-2"
+
+  risk_calculation_engine:
+    status: "NOT_IMPLEMENTED"
+    implementation_files: []
+    integration_files: ["consumer from account_raw", "producer to risk_state"]
+    integration_todos:
+      - "Implement risk calculation logic"
+      - "Consumer for account_raw topic"
+      - "Producer for risk_state topic"
+    business_impact: "Core risk management and hedge decision making"
+    
+  hedge_execution_engine:
+    status: "NOT_IMPLEMENTED"
+    implementation_files: []
+    integration_files: ["consumer from risk_state", "producer to hedge_trades"]
+    integration_todos:
+      - "Implement hedge execution logic"
+      - "Consumer for risk_state topic"
+      - "Producer for hedge_trades topic"
+    business_impact: "Automated hedge trade execution"
+    
+  trade_executor:
+    status: "NOT_IMPLEMENTED"
+    implementation_files: []
+    integration_files: ["consumer from hedge_trades", "exchange APIs"]
+    integration_todos:
+      - "Consumer for hedge_trades topic"
+      - "Integration with exchange trade APIs"
+      - "Trade confirmation and status updates"
+    business_impact: "Actual hedge trade execution on exchanges"

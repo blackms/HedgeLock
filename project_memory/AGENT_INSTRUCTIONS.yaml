@@ -1,0 +1,70 @@
+mandatory_reading:
+  - "PROJECT_MEMORY.yaml - Trading system state and critical gaps"
+  - "COMPONENT_MAP.yaml - What exists and integration status"
+  - "INTEGRATION_FLOWS.yaml - Data flows and gaps in trading pipeline"
+
+critical_mindset:
+  - "Integration > Implementation - Data must flow end-to-end"
+  - "Trading system value comes from complete data pipeline"
+  - "Kafka producers without consumers create data graveyards"
+  - "Risk management requires real-time data processing"
+
+project_specific_context:
+  domain: "High-frequency trading and risk management"
+  critical_requirements:
+    - "Real-time data processing (5s or faster)"
+    - "Reliable message delivery through Kafka"
+    - "Proper error handling for financial data"
+    - "Integration testing for complete trading flows"
+  
+  current_major_gap: "account_raw topic producing data with no consumers"
+  
+mandatory_integration_validation:
+  for_any_kafka_component:
+    - "Verify topic exists and is accessible"
+    - "Test producer/consumer connection end-to-end"
+    - "Validate message schema and error handling"
+    - "Check topic monitoring and lag metrics"
+    
+  for_trading_components:
+    - "Validate data flow from collection through risk to execution"
+    - "Test error scenarios (API failures, network issues)"
+    - "Verify business logic produces correct trading decisions"
+    - "Integration test complete trading scenarios"
+
+mandatory_documentation_updates:
+  after_any_integration:
+    - "Update COMPONENT_MAP.yaml with new integration status"
+    - "Update INTEGRATION_FLOWS.yaml if data flows changed"
+    - "Update current_path in main_system_flow"
+    - "Commit documentation changes separately from code"
+    
+  after_kafka_work:
+    - "Document topic schemas and expected message rates"
+    - "Update producer/consumer integration status"
+    - "Note any schema changes or breaking changes"
+
+integration_testing_requirements:
+  kafka_integration:
+    - "docker-compose up successfully starts all services"
+    - "kafka-topics.sh --list shows all required topics"
+    - "Producer can publish test messages"
+    - "Consumer can read test messages"
+    
+  business_logic_integration:
+    - "End-to-end test: mock exchange data → final hedge decision"
+    - "Performance test: system handles expected message volume"
+    - "Failure test: system recovers from component failures"
+
+commit_strategy:
+  integration_phases:
+    1: "feat(kafka): implement core kafka infrastructure"
+    2: "feat(integration): wire kafka into main application startup"
+    3: "feat(monitoring): add kafka health checks and monitoring"
+    4: "test(integration): add end-to-end kafka integration tests"
+
+sprint_focus_hl_06:
+  primary: "Complete data collection pipeline foundation"
+  secondary: "Ensure Kafka infrastructure is production-ready"
+  integration_debt: "account_raw topic needs downstream consumers"
+  next_sprint_prep: "Design risk calculation engine to consume account_raw"

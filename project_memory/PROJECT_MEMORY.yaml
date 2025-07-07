@@ -1,0 +1,33 @@
+project:
+  name: "Trading Risk Management System"
+  current_version: "v1.0.0"
+  description: "Event-driven trading system for real-time risk management and automated hedging"
+
+architecture:
+  type: "Event-driven microservices with Kafka"
+  key_layers: 
+    - "Data Collection Layer (Exchange APIs/WebSockets)"
+    - "Event Streaming Layer (Kafka)"
+    - "Risk Processing Layer"
+    - "Hedge Execution Layer"
+  integration_strategy: "All data flows through Kafka topics with proper schema validation"
+
+current_status:
+  completed_sprints: []
+  active_sprint: 6
+  integration_debt: "Track components implemented but not integrated into main trading flow"
+
+critical_context:
+  current_focus: "Building foundational data collection pipeline"
+  major_gaps: 
+    - "No risk calculation engine connected to account_raw data"
+    - "No hedge execution engine consuming risk_state"
+    - "No monitoring/alerting for trading system health"
+  common_mistakes: "Building collectors without downstream consumers"
+  
+business_impact:
+  primary_goal: "Automated risk management and hedging for trading positions"
+  success_metrics:
+    - "Real-time position monitoring"
+    - "Automated hedge trade execution"
+    - "Risk exposure within defined limits"
