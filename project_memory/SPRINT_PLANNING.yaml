@@ -1,0 +1,185 @@
+# NEXT SPRINT TASKS - INTEGRATION PRIORITY
+
+## 🚨 CRITICAL INTEGRATION DEBT (Sprint HL-07)
+
+### HL-07-1
+priority: HIGH  
+points: 13  
+team: Dev  
+title: "Risk Calculation Engine v1.0"
+
+description: |
+  Implement risk calculation engine to consume account_raw topic and produce risk_state. 
+  System currently has data collection with no downstream processing.
+
+integration_requirements:
+  system_wiring: "Must consume from account_raw Kafka topic"
+  user_interface: "Risk dashboard showing current portfolio risk"
+  business_flow: "Must trigger hedge recommendations based on risk thresholds"
+
+implementation_phases:
+  phase_1_core_risk_engine:
+    - "feat(risk): implement basic risk calculation logic"
+    - "feat(risk): add portfolio risk scoring algorithm"
+    - "test(risk): unit tests for risk calculations"
+
+  phase_2_kafka_integration:
+    - "feat(integration): wire risk engine to consume account_raw"
+    - "feat(integration): produce risk_state messages to Kafka"
+    - "test(integration): end-to-end risk processing tests"
+
+  phase_3_business_logic:
+    - "feat(risk): implement hedge recommendation logic"
+    - "feat(risk): add risk threshold monitoring"
+    - "test(risk): business logic validation tests"
+
+  phase_4_monitoring:
+    - "feat(monitoring): add risk engine health metrics"
+    - "feat(monitoring): risk calculation performance tracking"
+    - "test(monitoring): alerting for risk calculation failures"
+
+success_criteria:
+  - "Consumes messages from account_raw topic"
+  - "Produces risk_state messages with hedge recommendations"
+  - "Risk dashboard shows real-time portfolio risk"
+  - "Integration tests pass for complete data flow"
+
+### HL-07-2
+priority: MEDIUM  
+points: 8  
+team: Dev  
+title: "Integration Monitoring Dashboard v1.0"
+
+description: |
+  Create monitoring dashboard showing Kafka topic health and data flow through trading pipeline.
+  Critical for production readiness.
+
+integration_requirements:
+  system_wiring: "Monitor all Kafka topics and consumer lag"
+  user_interface: "Web dashboard showing pipeline health"
+  business_flow: "Alert on data flow interruptions"
+
+implementation_phases:
+  phase_1_kafka_monitoring:
+    - "feat(monitoring): implement topic lag monitoring"
+    - "feat(monitoring): consumer health checks"
+    - "test(monitoring): monitoring accuracy tests"
+
+  phase_2_dashboard_integration:
+    - "feat(ui): create pipeline health dashboard"
+    - "feat(ui): real-time data flow visualization"
+    - "test(ui): dashboard functionality tests"
+
+  phase_3_alerting:
+    - "feat(alerts): implement pipeline failure alerts"
+    - "feat(alerts): risk calculation delay warnings"
+    - "test(alerts): alert accuracy and timing tests"
+
+success_criteria:
+  - "Dashboard shows real-time topic health"
+  - "Alerts trigger on pipeline failures"
+  - "Data flow gaps are immediately visible"
+  - "Performance metrics track processing latency"
+
+## 🎯 FOUNDATION COMPLETION (Sprint HL-08)
+
+### HL-08-1
+priority: HIGH
+points: 21  
+team: Dev
+title: "Hedge Execution Engine v1.0"
+
+description: |
+  Implement hedge execution engine consuming risk_state and producing hedge_trades.
+  Completes core trading decision pipeline.
+
+integration_requirements:
+  system_wiring: "Consume risk_state, produce hedge_trades"
+  user_interface: "Hedge execution controls and status"
+  business_flow: "Automated hedge decisions based on risk"
+
+success_criteria:
+  - "Consumes risk_state messages"
+  - "Produces actionable hedge_trades messages"
+  - "Hedge decisions are auditable and traceable"
+  - "Integration with risk thresholds and limits"
+
+### HL-08-2
+priority: HIGH
+points: 13
+team: Dev  
+title: "Trade Executor v1.0"
+
+description: |
+  Implement trade executor consuming hedge_trades and executing on exchanges.
+  Completes end-to-end trading pipeline.
+
+integration_requirements:
+  system_wiring: "Consume hedge_trades, execute via exchange APIs"
+  user_interface: "Trade execution status and history"
+  business_flow: "Actual hedge trades executed automatically"
+
+success_criteria:
+  - "Consumes hedge_trades messages"
+  - "Successfully executes trades on exchange"
+  - "Trade confirmations and status tracking"
+  - "Complete audit trail from risk → hedge → execution"
+
+## 📊 INTEGRATION VALIDATION TASKS
+
+### HL-09-1
+priority: MEDIUM
+points: 5
+team: Dev
+title: "End-to-End Integration Audit"
+
+description: |
+  Comprehensive audit ensuring complete data flow from collection through execution.
+
+validation_steps:
+  1_data_flow_test: "Mock exchange data → risk calculation → hedge decision → trade execution"
+  2_performance_test: "System handles expected trading volume"
+  3_failure_recovery: "System recovers from component failures"
+  4_business_validation: "Hedge decisions produce correct trading outcomes"
+
+success_criteria:
+  - "Complete pipeline processes test scenarios"
+  - "All components properly integrated"
+  - "Performance meets trading requirements"
+  - "Business logic produces expected results"
+
+## 🔄 INTEGRATION METHODOLOGY
+
+before_starting_each_task:
+  - "Read updated PROJECT_MEMORY.yaml for current integration status"
+  - "Check COMPONENT_MAP.yaml for dependencies"
+  - "Review INTEGRATION_FLOWS.yaml for data flow requirements"
+
+after_completing_each_task:
+  - "Update COMPONENT_MAP.yaml with new integration status"
+  - "Update INTEGRATION_FLOWS.yaml current_path"
+  - "Commit documentation changes separately"
+  - "Run integration validation tests"
+
+sprint_success_definition:
+  - "No 'IMPLEMENTED_NOT_INTEGRATED' components remain"
+  - "Complete data flow from collection to execution"
+  - "All business value delivered through integrated features"
+  - "Real trading decisions automated end-to-end"
+
+## 📈 BUSINESS IMPACT TIMELINE
+
+sprint_hl_07_outcome:
+  - "Real-time risk monitoring operational"
+  - "Data flows from collection through risk analysis"
+  - "Foundation for automated hedge decisions"
+
+sprint_hl_08_outcome:
+  - "Complete automated trading pipeline operational"
+  - "Hedge decisions execute as actual trades"
+  - "Full risk management system delivering business value"
+
+sprint_hl_09_outcome:
+  - "Production-ready trading system"
+  - "Complete integration validation"
+  - "Scalable foundation for additional trading strategies"

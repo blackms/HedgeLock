@@ -45,7 +45,7 @@ components:
     sprint: "HL-06-2"
 
   risk_calculation_engine:
-    status: "NOT_IMPLEMENTED"
+    status: "IN_PROGRESS"
     implementation_files: []
     integration_files: ["consumer from account_raw", "producer to risk_state"]
     integration_todos:
@@ -53,9 +53,12 @@ components:
       - "Consumer for account_raw topic"
       - "Producer for risk_state topic"
     business_impact: "Core risk management and hedge decision making"
+    sprint: "HL-06-4"
+    last_updated: "2025-07-07"
+    notes: "RiskEngine v1.0 - Computing LTV, NetΔ, emitting risk states"
     
   hedge_execution_engine:
-    status: "NOT_IMPLEMENTED"
+    status: "IN_PROGRESS"
     implementation_files: []
     integration_files: ["consumer from risk_state", "producer to hedge_trades"]
     integration_todos:
@@ -63,6 +66,9 @@ components:
       - "Consumer for risk_state topic"
       - "Producer for hedge_trades topic"
     business_impact: "Automated hedge trade execution"
+    sprint: "HL-06-6"
+    last_updated: "2025-07-07"
+    notes: "Hedger v0.9 - Testnet market orders based on risk states"
     
   trade_executor:
     status: "NOT_IMPLEMENTED"
@@ -73,3 +79,51 @@ components:
       - "Integration with exchange trade APIs"
       - "Trade confirmation and status updates"
     business_impact: "Actual hedge trade execution on exchanges"
+    
+  config_management:
+    status: "IN_PROGRESS"
+    implementation_files: []
+    integration_files: ["All microservices"]
+    integration_todos:
+      - "Implement pydantic-settings module"
+      - "Create .env.example template"
+      - "Migrate all services to use centralized config"
+    business_impact: "Standardized configuration and secrets management"
+    sprint: "HL-06-5"
+    last_updated: "2025-07-07"
+    
+  monitoring_infrastructure:
+    status: "IN_PROGRESS"
+    implementation_files: []
+    integration_files: ["All services", "Prometheus", "Grafana"]
+    integration_todos:
+      - "Add structured logging with Loguru"
+      - "Implement health/readiness probes"
+      - "Create monitoring dashboards"
+    business_impact: "Production observability and debugging"
+    sprint: "HL-06-8, HL-06-9"
+    last_updated: "2025-07-07"
+    
+  integration_testing:
+    status: "IN_PROGRESS"
+    implementation_files: []
+    integration_files: ["CI/CD pipeline", "All services"]
+    integration_todos:
+      - "Create integration test suite"
+      - "Test complete data flow pipeline"
+      - "Validate hedge execution on mock data"
+    business_impact: "Quality assurance for trading pipeline"
+    sprint: "HL-06-7"
+    last_updated: "2025-07-07"
+    
+  treasury_module:
+    status: "NOT_IMPLEMENTED"
+    implementation_files: []
+    integration_files: ["Consumer from hedge_trades"]
+    integration_todos:
+      - "Listen to hedge_trades topic"
+      - "Track realized P&L"
+      - "Create ledger collection"
+    business_impact: "P&L tracking and treasury management"
+    sprint: "HL-06-S (STRETCH)"
+    last_updated: "2025-07-07"

@@ -1,0 +1,154 @@
+# SPRINT HL-06 TASKS - CURRENT ACTIVE SPRINT
+
+sprint_metadata:
+  sprint_id: "HL-06"
+  sprint_name: "Foundation Integration & Risk Engine"
+  total_points: 35
+  stretch_points: 4
+  focus: "Complete data pipeline foundation with risk calculation and hedge execution"
+
+tasks:
+  HL-06-3:
+    title: "Collector soak test"
+    points: 5
+    team: QA
+    status: "TODO"
+    description: |
+      Kill WS, ensure reconnect; check no data gap > 15 s.
+      Test script exits 0.
+    acceptance_criteria:
+      - "WebSocket reconnection tested under failure scenarios"
+      - "No data gaps exceeding 15 seconds"
+      - "Test script exits with code 0"
+    integration_impact: "Ensures reliable data collection for downstream risk processing"
+
+  HL-06-4:
+    title: "RiskEngine v1.0"
+    points: 5
+    team: Dev
+    status: "TODO"
+    description: |
+      • Consume account_raw
+      • Compute LTV, NetΔ
+      • Emit risk_state (NORMAL/CAUTION/DANGER/CRITICAL)
+      • Prometheus /metrics
+    acceptance_criteria:
+      - "Latency < 150 ms"
+      - "100% branch coverage on state machine"
+    integration_impact: "CRITICAL - Fills gap between account_raw producer and risk_state consumer"
+    implementation_notes:
+      - "Consumes from account_raw Kafka topic"
+      - "Produces to risk_state Kafka topic"
+      - "Implements core risk calculation logic"
+
+  HL-06-5:
+    title: "Config module"
+    points: 3
+    team: Arch
+    status: "TODO"
+    description: |
+      pydantic-settings; move env-vars out of code; .env.example
+    acceptance_criteria:
+      - "All services import Settings"
+      - "Secrets no longer hard-coded"
+    integration_impact: "Standardizes configuration across all microservices"
+
+  HL-06-6:
+    title: "Hedger v0.9"
+    points: 5
+    team: Dev
+    status: "TODO"
+    description: |
+      • Consume risk_state
+      • Size delta vs target (Caution = +0.02 BTC, Danger = 0)
+      • Place testnet market order via /v5/order/create
+      • Publish fill to hedge_trades
+    acceptance_criteria:
+      - "In testnet, raising mock LTV triggers order"
+      - "Order qty matches delta"
+    integration_impact: "Completes risk → hedge decision flow"
+    implementation_notes:
+      - "Consumes from risk_state Kafka topic"
+      - "Produces to hedge_trades Kafka topic"
+      - "Executes actual trades on testnet"
+
+  HL-06-7:
+    title: "Integration pipeline test"
+    points: 3
+    team: QA
+    status: "TODO"
+    description: |
+      Replay canned account_raw message stream; expect Hedger order call recorded by respx
+    acceptance_criteria:
+      - "CI job integration-pipeline green"
+    integration_impact: "Validates complete data flow from collection → risk → hedge"
+
+  HL-06-8:
+    title: "Structured logging"
+    points: 3
+    team: Dev
+    status: "TODO"
+    description: |
+      Add Loguru JSON sink with service, trace_id, msg
+    acceptance_criteria:
+      - "Logs readable in docker logs"
+      - "End-to-end trace_id preserved"
+    integration_impact: "Enables tracing requests through entire pipeline"
+
+  HL-06-9:
+    title: "Health & readiness probes"
+    points: 2
+    team: Dev
+    status: "TODO"
+    description: |
+      /healthz, /ready on each FastAPI app; add to compose
+    acceptance_criteria:
+      - "curl localhost:800x/ready returns 200"
+    integration_impact: "Production readiness for all services"
+
+  HL-06-10:
+    title: "Docs update"
+    points: 3
+    team: PM
+    status: "TODO"
+    description: |
+      Generate Mermaid sequence diagram; write "Quick-start local dev" guide
+    acceptance_criteria:
+      - "Markdown committed in /docs/"
+    integration_impact: "Developer onboarding and system understanding"
+
+  HL-06-S:
+    title: "Treasury stub (STRETCH)"
+    points: 4
+    team: Stretch
+    status: "TODO"
+    description: |
+      Listen to hedge_trades, log realised PnL (no repayment yet)
+    acceptance_criteria:
+      - "Ledger collection created"
+      - "Unit test passes"
+    integration_impact: "Foundation for P&L tracking and treasury management"
+
+sprint_integration_goals:
+  primary:
+    - "Complete account_raw → risk_state → hedge_trades pipeline"
+    - "Risk engine operational and producing risk states"
+    - "Hedger executing trades based on risk signals"
+  
+  secondary:
+    - "All services have proper config management"
+    - "Integration testing validates complete flow"
+    - "Monitoring and logging infrastructure ready"
+
+critical_path:
+  1: "HL-06-4 (RiskEngine) - Unlocks risk_state production"
+  2: "HL-06-6 (Hedger) - Completes trading decision flow"
+  3: "HL-06-7 (Integration test) - Validates end-to-end pipeline"
+
+integration_validation:
+  before_sprint_complete:
+    - "account_raw topic has active consumer (RiskEngine)"
+    - "risk_state topic has active consumer (Hedger)"
+    - "hedge_trades topic populated with test trades"
+    - "End-to-end data flow demonstrated"
+    - "No 'IMPLEMENTED_NOT_INTEGRATED' components added"

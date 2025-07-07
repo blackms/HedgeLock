@@ -16,6 +16,7 @@ current_status:
   completed_sprints: []
   active_sprint: 6
   integration_debt: "Track components implemented but not integrated into main trading flow"
+  sprint_planning: "See SPRINT_PLANNING.yaml for upcoming sprint tasks HL-07 through HL-09"
 
 critical_context:
   current_focus: "Building foundational data collection pipeline"
