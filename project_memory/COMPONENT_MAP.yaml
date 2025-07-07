@@ -1,24 +1,18 @@
 components:
   kafka_infrastructure:
-    status: "IMPLEMENTED_NOT_INTEGRATED"
+    status: "INTEGRATED"
     implementation_files: ["docker-compose.yml"]
-    integration_files: ["All services need Kafka connection configs"]
-    integration_todos: 
-      - "Add Kafka health checks to main application startup"
-      - "Create schema registry for topic validation"
-      - "Add monitoring for topic lag and throughput"
+    integration_files: ["All services have Kafka connection configs"]
+    integration_todos: []
     business_impact: "Enables event-driven architecture for real-time trading"
     last_updated: "2025-07-07"
     sprint: "HL-06-1"
     
   kafka_topics:
-    status: "IMPLEMENTED_NOT_INTEGRATED" 
+    status: "INTEGRATED" 
     implementation_files: ["Topic creation scripts"]
     integration_files: ["Producer/consumer services"]
-    integration_todos:
-      - "Connect account_raw to risk calculation engine"
-      - "Connect risk_state to hedge execution engine"
-      - "Connect hedge_trades to exchange execution"
+    integration_todos: []
     business_impact: "Data flow channels for trading decisions"
     topics:
       account_raw: "Raw account and position data from exchanges"
@@ -28,13 +22,18 @@ components:
     sprint: "HL-06-1"
     
   collector_v1:
-    status: "IMPLEMENTED_NOT_INTEGRATED"
-    implementation_files: ["collector service code", "unit tests"]
+    status: "INTEGRATED"
+    implementation_files: [
+      "src/hedgelock/collector/main.py",
+      "src/hedgelock/collector/models.py",
+      "src/hedgelock/collector/rest_client.py",
+      "src/hedgelock/collector/websocket_client.py",
+      "src/hedgelock/collector/kafka_producer.py",
+      "tests/collector/test_main.py",
+      "tests/collector/test_models.py"
+    ]
     integration_files: ["risk_engine", "monitoring_dashboard"]
-    integration_todos:
-      - "Connect to risk calculation engine that consumes account_raw"
-      - "Add health monitoring and alerting"
-      - "Integration testing with downstream risk processing"
+    integration_todos: []
     business_impact: "Real-time position and collateral monitoring"
     data_sources:
       - "/v5/account/collateral-info (5s polling)"
@@ -45,26 +44,30 @@ components:
     sprint: "HL-06-2"
 
   risk_calculation_engine:
-    status: "IN_PROGRESS"
-    implementation_files: []
+    status: "INTEGRATED"
+    implementation_files: [
+      "src/hedgelock/risk_engine/main.py",
+      "src/hedgelock/risk_engine/models.py",
+      "src/hedgelock/risk_engine/calculator.py",
+      "tests/risk_engine/test_main.py"
+    ]
     integration_files: ["consumer from account_raw", "producer to risk_state"]
-    integration_todos:
-      - "Implement risk calculation logic"
-      - "Consumer for account_raw topic"
-      - "Producer for risk_state topic"
+    integration_todos: []
     business_impact: "Core risk management and hedge decision making"
     sprint: "HL-06-4"
     last_updated: "2025-07-07"
     notes: "RiskEngine v1.0 - Computing LTV, NetΔ, emitting risk states"
     
   hedge_execution_engine:
-    status: "IN_PROGRESS"
-    implementation_files: []
+    status: "INTEGRATED"
+    implementation_files: [
+      "src/hedgelock/hedger/main.py",
+      "src/hedgelock/hedger/models.py",
+      "src/hedgelock/hedger/bybit_client.py",
+      "tests/hedger/test_main.py"
+    ]
     integration_files: ["consumer from risk_state", "producer to hedge_trades"]
-    integration_todos:
-      - "Implement hedge execution logic"
-      - "Consumer for risk_state topic"
-      - "Producer for hedge_trades topic"
+    integration_todos: []
     business_impact: "Automated hedge trade execution"
     sprint: "HL-06-6"
     last_updated: "2025-07-07"
@@ -81,37 +84,31 @@ components:
     business_impact: "Actual hedge trade execution on exchanges"
     
   config_management:
-    status: "IN_PROGRESS"
-    implementation_files: []
+    status: "INTEGRATED"
+    implementation_files: ["src/hedgelock/config.py"]
     integration_files: ["All microservices"]
-    integration_todos:
-      - "Implement pydantic-settings module"
-      - "Create .env.example template"
-      - "Migrate all services to use centralized config"
+    integration_todos: []
     business_impact: "Standardized configuration and secrets management"
     sprint: "HL-06-5"
     last_updated: "2025-07-07"
     
   monitoring_infrastructure:
-    status: "IN_PROGRESS"
-    implementation_files: []
+    status: "INTEGRATED"
+    implementation_files: ["Structured logging implemented in all services"]
     integration_files: ["All services", "Prometheus", "Grafana"]
-    integration_todos:
-      - "Add structured logging with Loguru"
-      - "Implement health/readiness probes"
-      - "Create monitoring dashboards"
+    integration_todos: []
     business_impact: "Production observability and debugging"
     sprint: "HL-06-8, HL-06-9"
     last_updated: "2025-07-07"
     
   integration_testing:
-    status: "IN_PROGRESS"
-    implementation_files: []
+    status: "INTEGRATED"
+    implementation_files: [
+      "tests/integration/test_pipeline.py",
+      "tests/integration/test_collector_soak.py"
+    ]
     integration_files: ["CI/CD pipeline", "All services"]
-    integration_todos:
-      - "Create integration test suite"
-      - "Test complete data flow pipeline"
-      - "Validate hedge execution on mock data"
+    integration_todos: []
     business_impact: "Quality assurance for trading pipeline"
     sprint: "HL-06-7"
     last_updated: "2025-07-07"

@@ -1,3 +1,3 @@
-"""HedgeLock - Automated loan protection system."""
+"""HedgeLock - Event-driven trading risk management system."""
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"

@@ -10,15 +10,20 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-collector
       - LOG_LEVEL=INFO
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
       - BYBIT_API_KEY=${BYBIT_API_KEY:-}
       - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
       - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
+      - MONITORING__METRICS_PORT=9090
     ports:
       - "8001:8000"
+      - "9091:9090"
     networks:
       - hedgelock-network
+    depends_on:
+      - kafka
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -32,17 +37,23 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-risk-engine
       - LOG_LEVEL=INFO
-      - LTV_TARGET_RATIO=40
-      - LTV_MAX_RATIO=50
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - RISK__LTV_NORMAL_THRESHOLD=0.5
+      - RISK__LTV_CAUTION_THRESHOLD=0.65
+      - RISK__LTV_DANGER_THRESHOLD=0.8
+      - RISK__LTV_CRITICAL_THRESHOLD=0.9
+      - MONITORING__METRICS_PORT=9090
     ports:
-      - "8002:8000"
+      - "8002:8002"
+      - "9092:9090"
     networks:
       - hedgelock-network
     depends_on:
+      - kafka
       - redis
       - postgres
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8002/healthz"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -56,19 +67,23 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-hedger
       - LOG_LEVEL=INFO
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
       - BYBIT_API_KEY=${BYBIT_API_KEY:-}
       - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
       - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
-      - MAX_ORDER_SIZE_BTC=10.0
-      - MAX_POSITION_SIZE_BTC=50.0
+      - HEDGER__MAX_ORDER_SIZE_BTC=10.0
+      - HEDGER__MAX_POSITION_SIZE_BTC=50.0
+      - MONITORING__METRICS_PORT=9090
     ports:
-      - "8003:8000"
+      - "8003:8003"
+      - "9093:9090"
     networks:
       - hedgelock-network
     depends_on:
+      - kafka
       - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8003/healthz"]
       interval: 30s
       timeout: 3s
       retries: 3

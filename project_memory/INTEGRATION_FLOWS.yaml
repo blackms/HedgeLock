@@ -8,26 +8,25 @@ main_system_flow:
     
   current_path:
     1: "Exchange APIs → Collector → account_raw topic ✓"
-    2: "account_raw topic → [MISSING CONSUMER] ❌"
-    3: "risk_state topic → [NOT IMPLEMENTED] ❌"
-    4: "hedge_trades topic → [NOT IMPLEMENTED] ❌"
-    5: "Monitoring → [NOT IMPLEMENTED] ❌"
+    2: "account_raw topic → Risk Engine → risk_state topic ✓"
+    3: "risk_state topic → Hedge Engine → hedge_trades topic ✓"
+    4: "hedge_trades topic → [Trade Executor NOT IMPLEMENTED] ❌"
+    5: "All stages → Monitoring & Alerting ✓"
     
   integration_gaps:
     critical:
-      - "account_raw topic has no consumers - data being produced but not processed"
-      - "No risk calculation engine to process position data"
-      - "No hedge execution to act on risk calculations"
+      - "hedge_trades topic has no consumer - hedge instructions not being executed on exchange"
+      - "No trade executor to place actual trades on Bybit"
     
     medium:
-      - "No monitoring/alerting for system health"
       - "No schema validation on Kafka topics"
       - "No dead letter queues for failed messages"
+      - "No treasury module to track P&L"
       
   next_integration_priority:
-    1: "Implement risk calculation engine consuming account_raw"
-    2: "Create monitoring dashboard showing data flow health"
-    3: "Implement hedge execution engine"
+    1: "Implement trade executor to consume hedge_trades and execute on Bybit"
+    2: "Add schema registry for Kafka topic validation"
+    3: "Implement treasury module for P&L tracking"
 
 data_schemas:
   account_raw:
