@@ -1,100 +1,79 @@
-## v0.1.3.2 - 2025-07-01
-
-- fix: update tests to match actual service implementations (aa332cc)
-  - Fix hedger service tests to use correct order status values
-  - Fix risk_engine tests to match actual method names and risk levels
-  - Fix treasury tests to use correct action types and field names
-  - Update test expectations to match actual API response formats
-- fix: remove unused Decimal import from risk_engine module (9dc01ce)
-  - Remove unused import flagged by flake8
-  - Ensures clean linting checks in CI/CD
-
-## v0.1.3.1 - 2025-07-01
-
-- style: apply Black formatter to all Python files (ce87e32)
-  - Format all test and source files with Black
-  - Fix line length and spacing issues
-  - Ensure consistent code style across the project
-
-## v0.1.3.0 - 2025-07-01
-
-- feat: implement pytest coverage with 90% threshold and product wiki (0f142cd)
-  - Set up pytest configuration with 90% coverage requirement (HL-00-6)
-  - Add .coveragerc for detailed coverage settings
-  - Update CI/CD pipeline to enforce coverage threshold
-  - Create comprehensive test suite achieving 92.82% coverage
-  - Add product wiki with glossary and architecture diagrams (HL-00-7)
-  - Fix type annotations in all service modules
-
-## v0.1.2.0 - 2025-06-30
-
-- Merge branch 'feature/kafka-setup' (b5774eb)
-- feat: add Kafka messaging system with 4 topics (HL-00-5) (7e301bd)
-
-
 # Changelog
 
 All notable changes to HedgeLock will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) with four-digit versioning (vW.X.Y.Z).
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2025-01-07
 
 ### Added
-- Apache Kafka and Zookeeper services to docker-compose.yml (HL-00-5)
-- Automatic creation of 4 Kafka topics: account_raw, risk_state, hedge_trades, treasury_actions
-- Kafka UI for monitoring topics and messages at http://localhost:8080
-- Kafka management commands in Makefile (kafka-topics, kafka-describe-topics, etc.)
-- Kafka documentation in LOCAL_DEVELOPMENT.md
+
+#### Core Infrastructure
+- Event-driven microservices architecture with Apache Kafka
+- Centralized configuration management using pydantic-settings
+- Structured logging with Loguru (JSON format, trace IDs)
+- Health and readiness probes for all services
+- Prometheus metrics integration
+- Docker Compose setup for local development
+
+#### Data Collection (Collector Service)
+- Bybit exchange integration (WebSocket + REST APIs)
+- Real-time position and market data streaming
+- Collateral and loan information polling (5s intervals)
+- Automatic WebSocket reconnection with exponential backoff
+- Message deduplication and reliability guarantees
+- Kafka producer integration for account_raw topic
+
+#### Risk Management (Risk Engine v1.0)
+- LTV (Loan-to-Value) calculation and monitoring
+- Net delta position tracking across portfolios
+- Risk state machine: NORMAL → CAUTION → DANGER → CRITICAL
+- Configurable risk thresholds
+- Hedge recommendation generation
+- Processing latency < 150ms requirement
+- Kafka consumer/producer for account_raw → risk_state flow
+
+#### Hedge Execution (Hedger v0.9)
+- Risk-based automated hedge decisions
+- Bybit testnet order execution
+- Position sizing based on risk state
+- Order tracking and reporting
+- Kafka consumer/producer for risk_state → hedge_trades flow
+- Support for market orders with IOC time-in-force
+
+#### Testing & Quality
+- Integration test suite for complete pipeline
+- Collector soak test (WebSocket resilience)
+- Unit tests with 90% coverage requirement
+- Pre-commit hooks for code quality
+- Black, isort, flake8, mypy integration
 
 ### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
+- Migrated from DeFi loan monitoring to trading risk management focus
+- Restructured project for event-driven architecture
+- Updated all services to use async/await patterns
 
 ### Security
-
-## [0.1.1.0] - 2024-12-30
-
-### Added
-- Docker Compose skeleton for local development (HL-00-4)
-- Stub implementations for all 5 microservices (Collector, RiskEngine, Hedger, Treasury, Alert)
-- PostgreSQL and Redis services in docker-compose.yml
-- Comprehensive .env.example with all configuration options
-- LOCAL_DEVELOPMENT.md documentation
-- Docker Compose commands in Makefile
-- CI/CD and Codecov badges in README
-
-### Fixed
-- Trivy security scanner configuration to use correct image tags
-- Black formatting for all Python files
-
-### Changed
-- Updated CI workflow to handle missing Codecov token gracefully
-- Set Codecov fail_ci_if_error to false
+- Environment-based configuration for API credentials
+- No hardcoded secrets in codebase
+- HMAC signature validation for exchange APIs
 
 ### Documentation
-- Added Codecov setup guide
-- Added instructions for using GitHub secrets
+- Comprehensive project memory system
+- Sprint planning documentation
+- Integration flow diagrams
+- Component status tracking
 
-## [0.1.0.0] - 2024-12-30
-
-### Added
-- Initial project structure with Poetry and dev container
-- Comprehensive architect prompts for all microservices (Collector, RiskEngine, Hedger, Treasury, Alert)
-- GitHub Actions CI/CD pipeline with Docker support
-- Automated release process with four-digit versioning (vW.X.Y.Z)
-- Dummy service for testing CI/CD pipeline
-- Development tooling (Makefile, black, isort, flake8, mypy)
-- Project documentation (README, BRANCHING, COMMITS, RELEASE, SYSTEM_OVERVIEW)
-- VS Code dev container configuration with PostgreSQL and Redis
-- Python 3.11 and Node.js 20 development environment
+## [0.1.3.2] - 2024-12-20
 
 ### Fixed
-- Removed non-existent types-aiokafka dependency
-- Corrected git command syntax in release script
-- Applied black formatting to all Python files
+- Service naming conventions
+- Docker container configurations
+
+## [0.1.0] - 2024-12-15
+
+### Added
+- Initial project structure
+- Basic service stubs
+- Development environment setup

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "hedgelock"
-version = "0.1.3.2"
-description = "Decentralized loan monitoring and management system with automated liquidation protection"
+version = "1.0.0"
+description = "Event-driven trading risk management system with automated hedging"
 authors = ["Alessio Rocchi <your.email@example.com>"]
 readme = "README.md"
 packages = [{include = "hedgelock", from = "src"}]
