@@ -8,13 +8,14 @@ import sys
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import json
+import pytest
 from aiokafka import AIOKafkaConsumer
 from unittest.mock import patch, AsyncMock
 
 from src.hedgelock.config import settings
-from src.hedgelock.collector.websocket_client import WebSocketManager
-from src.hedgelock.collector.kafka_producer import KafkaProducerWrapper
 from src.hedgelock.logging import get_logger
+
+pytestmark = pytest.mark.integration
 
 logger = get_logger(__name__)
 

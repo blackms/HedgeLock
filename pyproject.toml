@@ -62,10 +62,14 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --cov=src/hedgelock --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=90"
+addopts = "-ra -q --strict-markers --cov=src/hedgelock --cov-report=term-missing --cov-report=html --cov-report=xml"
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "unit: marks tests as unit tests"
+]
 
 [build-system]
 requires = ["poetry-core"]

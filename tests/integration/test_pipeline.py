@@ -14,7 +14,8 @@ import httpx
 
 from src.hedgelock.config import settings
 from src.hedgelock.risk_engine.models import AccountData, RiskState
-from src.hedgelock.collector.models import AccountRawMessage
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
