@@ -1,8 +1,8 @@
 project:
   name: "Trading Risk Management System"
-  current_version: "v1.0.0"
+  current_version: "v1.1.0"
   description: "Event-driven trading system for real-time risk management and automated hedging"
-  release_date: "2025-01-07"
+  release_date: "2025-07-15"
   release_status: "RELEASED"
 
 architecture:
@@ -16,10 +16,10 @@ architecture:
 
 current_status:
   completed_sprints: ["HL-06", "HL-07"]
-  active_sprint: "HL-07"
+  active_sprint: null
   integration_debt: "None - all components integrated"
   sprint_planning: "See SPRINT_PLANNING.yaml for upcoming sprint tasks HL-08 through HL-09"
-  release_notes: "v1.0.0 released with complete data pipeline foundation; v1.1.0 adds Trade Executor"
+  release_notes: "v1.1.0 released with complete Trade Executor implementation - system now fully functional"
 
 critical_context:
   current_focus: "Trade Executor implemented - system now fully functional"
