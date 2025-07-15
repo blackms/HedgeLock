@@ -186,6 +186,81 @@ class BybitRestClient:
             logger.error(f"Error getting wallet balance: {e}", exc_info=True)
             return {}
     
+    async def get_funding_rate_history(
+        self, 
+        symbol: str = "BTCUSDT",
+        limit: int = 200
+    ) -> Optional[list]:
+        """Get funding rate history for a symbol."""
+        endpoint = "/v5/market/funding/history"
+        url = f"{self.base_url}{endpoint}"
+        
+        params = {
+            "category": "linear",
+            "symbol": symbol,
+            "limit": str(limit)
+        }
+        
+        try:
+            # Funding history is public data, no signature needed
+            response = await self.client.get(url, params=params)
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            if result.get("retCode") != 0:
+                logger.error(f"Failed to get funding history: {result.get('retMsg')}")
+                return None
+            
+            return result.get("result", {}).get("list", [])
+            
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error getting funding history: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error getting funding history: {e}", exc_info=True)
+            return None
+    
+    async def get_current_funding_rate(self, symbol: str = "BTCUSDT") -> Optional[Dict[str, Any]]:
+        """Get current funding rate and countdown."""
+        endpoint = "/v5/market/tickers"
+        url = f"{self.base_url}{endpoint}"
+        
+        params = {
+            "category": "linear",
+            "symbol": symbol
+        }
+        
+        try:
+            response = await self.client.get(url, params=params)
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            if result.get("retCode") != 0:
+                logger.error(f"Failed to get ticker: {result.get('retMsg')}")
+                return None
+            
+            tickers = result.get("result", {}).get("list", [])
+            if tickers:
+                ticker = tickers[0]
+                return {
+                    "symbol": ticker.get("symbol"),
+                    "fundingRate": float(ticker.get("fundingRate", 0)),
+                    "nextFundingTime": ticker.get("nextFundingTime"),
+                    "markPrice": float(ticker.get("markPrice", 0)),
+                    "indexPrice": float(ticker.get("indexPrice", 0))
+                }
+            
+            return None
+            
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error getting current funding: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error getting current funding: {e}", exc_info=True)
+            return None
+    
     async def close(self):
         """Close the HTTP client."""
         await self.client.aclose()

@@ -13,6 +13,7 @@ from aiokafka.errors import KafkaError
 from src.hedgelock.config import settings
 from src.hedgelock.logging import get_logger, trace_context
 from .models import AccountUpdate, MarketData, OrderUpdate
+from src.hedgelock.shared.funding_models import FundingRateMessage
 
 logger = get_logger(__name__)
 
@@ -202,6 +203,56 @@ class KafkaMessageProducer:
                     "Error publishing order update",
                     error=str(e),
                     order_id=order_update.order_id,
+                    exc_info=True
+                )
+                return False
+    
+    async def publish_funding_rate(self, funding_message: FundingRateMessage, trace_id: Optional[str] = None) -> bool:
+        """Publish funding rate to Kafka."""
+        if not self._is_connected:
+            logger.error("Kafka producer not connected")
+            return False
+        
+        with trace_context(trace_id) as tid:
+            try:
+                # Convert to dict for serialization
+                message = funding_message.model_dump(mode='json')
+                message['trace_id'] = tid
+                
+                # Add headers with trace ID
+                headers = [('trace_id', tid.encode('utf-8'))]
+                
+                # Publish to funding_rates topic
+                topic = self.config.topic_funding_rates
+                await self.producer.send(
+                    topic,
+                    value=message,
+                    headers=headers,
+                    key=funding_message.funding_rate.symbol.encode('utf-8')
+                )
+                
+                logger.info(
+                    "Published funding rate",
+                    symbol=funding_message.funding_rate.symbol,
+                    rate=funding_message.funding_rate.funding_rate,
+                    annualized=funding_message.funding_rate.annualized_rate,
+                    topic=topic
+                )
+                
+                return True
+                
+            except KafkaError as e:
+                logger.error(
+                    "Kafka error publishing funding rate",
+                    error=str(e),
+                    symbol=funding_message.funding_rate.symbol
+                )
+                return False
+            except Exception as e:
+                logger.error(
+                    "Error publishing funding rate",
+                    error=str(e),
+                    symbol=funding_message.funding_rate.symbol,
                     exc_info=True
                 )
                 return False

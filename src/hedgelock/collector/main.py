@@ -14,6 +14,7 @@ from .websocket_client import BybitWebSocketClient
 from .rest_client import BybitRestClient
 from .kafka_producer import KafkaMessageProducer
 from .models import AccountUpdate, MarketData, OrderUpdate, Position, Balance
+from src.hedgelock.shared.funding_models import FundingRate, FundingRateMessage
 
 logger = get_logger(__name__)
 
@@ -202,6 +203,53 @@ class CollectorService:
         except Exception as e:
             logger.error(f"Error sending account update: {e}", exc_info=True)
 
+    async def _poll_funding_rates(self) -> None:
+        """Poll for funding rate information."""
+        # Initial delay to stagger polling
+        await asyncio.sleep(30)
+        
+        while self.is_running:
+            try:
+                with trace_context() as trace_id:
+                    logger.info("Polling funding rates")
+                    
+                    # Get current funding rate
+                    current_funding = await self.rest_client.get_current_funding_rate()
+                    if current_funding:
+                        # Convert to FundingRate model
+                        funding_rate = FundingRate(
+                            symbol=current_funding["symbol"],
+                            funding_rate=current_funding["fundingRate"],
+                            funding_time=datetime.fromtimestamp(
+                                int(current_funding["nextFundingTime"]) / 1000
+                            ),
+                            mark_price=current_funding["markPrice"],
+                            index_price=current_funding["indexPrice"]
+                        )
+                        
+                        # Create message
+                        message = FundingRateMessage(
+                            funding_rate=funding_rate,
+                            trace_id=trace_id
+                        )
+                        
+                        # Publish to Kafka
+                        success = await self.kafka_producer.publish_funding_rate(message, trace_id)
+                        if success:
+                            logger.info(
+                                f"Published funding rate: {funding_rate.symbol} "
+                                f"rate={funding_rate.funding_rate:.4%} "
+                                f"annualized={funding_rate.annualized_rate:.2f}%"
+                            )
+                    else:
+                        logger.warning("Failed to get current funding rate")
+                        
+            except Exception as e:
+                logger.error(f"Error polling funding rates: {e}", exc_info=True)
+                
+            # Poll every hour (funding updates every 8 hours)
+            await asyncio.sleep(3600)
+
     async def start(self) -> None:
         """Start the collector service."""
         logger.info("Starting Collector service...")
@@ -218,7 +266,8 @@ class CollectorService:
             # Create tasks
             tasks = [
                 asyncio.create_task(self.ws_client.start()),
-                asyncio.create_task(self._poll_account_data())
+                asyncio.create_task(self._poll_account_data()),
+                asyncio.create_task(self._poll_funding_rates())
             ]
             
             # Wait for all tasks

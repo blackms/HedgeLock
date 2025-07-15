@@ -30,6 +30,8 @@ class KafkaSettings(BaseSettings):
     topic_account_raw: str = Field(default="account_raw", description="Raw account data topic")
     topic_risk_state: str = Field(default="risk_state", description="Risk state topic")
     topic_hedge_trades: str = Field(default="hedge_trades", description="Hedge trades topic")
+    topic_funding_rates: str = Field(default="funding_rates", description="Funding rates topic")
+    topic_funding_context: str = Field(default="funding_context", description="Funding context topic")
     topic_treasury_actions: str = Field(default="treasury_actions", description="Treasury actions topic")
     
     model_config = SettingsConfigDict(env_prefix="KAFKA_")
