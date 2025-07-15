@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Test Kafka and dependencies
+  test-zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: hedgelock-test-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - test-network
+
+  test-kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: hedgelock-test-kafka
+    depends_on:
+      - test-zookeeper
+    ports:
+      - "19092:19092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: test-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://test-kafka:9092,PLAINTEXT_HOST://localhost:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - test-network
+
+  test-redis:
+    image: redis:7-alpine
+    container_name: hedgelock-test-redis
+    ports:
+      - "16379:6379"
+    networks:
+      - test-network
+
+  # Integration test runner
+  integration-tests:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.test
+    container_name: hedgelock-integration-tests
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=test-kafka:9092
+      - REDIS_HOST=test-redis
+      - REDIS_PORT=6379
+      - BYBIT_TESTNET=true
+      - PYTHONPATH=/app
+    depends_on:
+      - test-kafka
+      - test-redis
+    volumes:
+      - ./tests:/app/tests
+      - ./src:/app/src
+    command: pytest tests/integration/funding/ -v --tb=short
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

@@ -19,6 +19,7 @@ from src.hedgelock.logging import get_logger, trace_context
 from src.hedgelock.health import HealthChecker, create_health_endpoints, ComponentHealth, HealthStatus
 from src.hedgelock.risk_engine.models import AccountData, RiskStateMessage
 from src.hedgelock.risk_engine.calculator import RiskCalculator
+from src.hedgelock.shared.funding_models import FundingContext, FundingContextMessage
 
 logger = get_logger(__name__)
 
@@ -37,9 +38,11 @@ class RiskEngineService:
     def __init__(self):
         self.config = settings
         self.consumer: Optional[AIOKafkaConsumer] = None
+        self.funding_consumer: Optional[AIOKafkaConsumer] = None
         self.producer: Optional[AIOKafkaProducer] = None
         self.calculator = RiskCalculator()
         self.is_running = False
+        self.funding_contexts: Dict[str, FundingContext] = {}  # Store funding context by symbol
         self.stats = {
             "messages_processed": 0,
             "messages_failed": 0,
@@ -51,7 +54,7 @@ class RiskEngineService:
         """Start the risk engine service."""
         logger.info("Starting Risk Engine service...")
         
-        # Initialize Kafka consumer
+        # Initialize Kafka consumer for account data
         self.consumer = AIOKafkaConsumer(
             self.config.kafka.topic_account_raw,
             bootstrap_servers=self.config.kafka.bootstrap_servers,
@@ -59,6 +62,15 @@ class RiskEngineService:
             value_deserializer=lambda m: json.loads(m.decode('utf-8')),
             enable_auto_commit=self.config.kafka.enable_auto_commit,
             max_poll_records=self.config.kafka.max_poll_records
+        )
+        
+        # Initialize Kafka consumer for funding context
+        self.funding_consumer = AIOKafkaConsumer(
+            "funding_context",  # Funding context topic
+            bootstrap_servers=self.config.kafka.bootstrap_servers,
+            group_id=f"{self.config.kafka.consumer_group_prefix}_risk_engine_funding",
+            value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+            enable_auto_commit=self.config.kafka.enable_auto_commit
         )
         
         # Initialize Kafka producer
@@ -69,12 +81,16 @@ class RiskEngineService:
         
         try:
             await self.consumer.start()
+            await self.funding_consumer.start()
             await self.producer.start()
-            logger.info("Kafka consumer and producer started successfully")
+            logger.info("Kafka consumers and producer started successfully")
             self.is_running = True
             
             # Start consuming messages
-            await self.consume_messages()
+            await asyncio.gather(
+                self.consume_messages(),
+                self.consume_funding_context()
+            )
             
         except Exception as e:
             logger.error(f"Failed to start Risk Engine: {e}")
@@ -88,6 +104,8 @@ class RiskEngineService:
         
         if self.consumer:
             await self.consumer.stop()
+        if self.funding_consumer:
+            await self.funding_consumer.stop()
         if self.producer:
             await self.producer.stop()
         
@@ -126,8 +144,11 @@ class RiskEngineService:
             # Parse account data
             account_data = AccountData(**message)
             
-            # Calculate risk
-            calculation = self.calculator.calculate_risk(account_data, trace_id)
+            # Get funding context for BTC (main trading pair)
+            funding_context = self.funding_contexts.get("BTCUSDT")
+            
+            # Calculate risk with funding context
+            calculation = self.calculator.calculate_risk(account_data, funding_context, trace_id)
             
             # Create risk state message
             risk_message = self.calculator.create_risk_state_message(calculation)
@@ -183,6 +204,32 @@ class RiskEngineService:
                 "critical": self.config.risk.ltv_critical_threshold
             }
         }
+    
+    async def consume_funding_context(self):
+        """Consume funding context messages."""
+        logger.info("Starting to consume funding context messages")
+        
+        async for message in self.funding_consumer:
+            if not self.is_running:
+                break
+                
+            try:
+                # Parse funding context message
+                funding_msg = FundingContextMessage(**message.value)
+                funding_context = funding_msg.funding_context
+                
+                # Store funding context
+                self.funding_contexts[funding_context.symbol] = funding_context
+                
+                logger.info(
+                    f"Updated funding context for {funding_context.symbol}",
+                    regime=funding_context.current_regime.value,
+                    rate=funding_context.current_rate,
+                    multiplier=funding_context.position_multiplier
+                )
+                
+            except Exception as e:
+                logger.error(f"Failed to process funding context: {e}", exc_info=True)
 
 
 # Global service instance

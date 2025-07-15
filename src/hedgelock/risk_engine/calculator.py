@@ -9,6 +9,7 @@ from src.hedgelock.logging import get_logger
 from src.hedgelock.risk_engine.models import (
     RiskState, AccountData, RiskCalculation, RiskStateMessage
 )
+from src.hedgelock.shared.funding_models import FundingContext, FundingRegime
 
 logger = get_logger(__name__)
 
@@ -21,7 +22,12 @@ class RiskCalculator:
         self.previous_state: Optional[RiskState] = None
         self.state_history: list = []
         
-    def calculate_risk(self, account_data: AccountData, trace_id: Optional[str] = None) -> RiskCalculation:
+    def calculate_risk(
+        self, 
+        account_data: AccountData, 
+        funding_context: Optional[FundingContext] = None,
+        trace_id: Optional[str] = None
+    ) -> RiskCalculation:
         """Calculate risk metrics from account data."""
         start_time = time.time()
         
@@ -42,6 +48,18 @@ class RiskCalculator:
             "collateral_usage": (account_data.used_collateral / account_data.total_collateral_value * 100) if account_data.total_collateral_value > 0 else 0
         }
         
+        # Adjust risk score based on funding context
+        funding_adjusted_score = risk_score
+        if funding_context:
+            funding_adjusted_score = self._adjust_risk_for_funding(risk_score, funding_context)
+            risk_factors["funding_risk"] = funding_context.current_rate / 3  # Scale APR to 0-100
+            
+            # Adjust risk state if funding is extreme
+            if funding_context.should_exit:
+                risk_state = RiskState.CRITICAL
+            elif funding_context.current_regime == FundingRegime.MANIA and risk_state == RiskState.NORMAL:
+                risk_state = RiskState.CAUTION
+        
         processing_time_ms = (time.time() - start_time) * 1000
         
         calculation = RiskCalculation(
@@ -51,6 +69,8 @@ class RiskCalculator:
             risk_state=risk_state,
             risk_score=risk_score,
             risk_factors=risk_factors,
+            funding_context=funding_context,
+            funding_adjusted_score=funding_adjusted_score,
             processing_time_ms=processing_time_ms,
             trace_id=trace_id
         )
@@ -110,6 +130,10 @@ class RiskCalculator:
             total_collateral_value=calculation.account_data.total_collateral_value,
             total_loan_value=calculation.account_data.total_loan_value,
             available_collateral=calculation.account_data.available_collateral,
+            funding_context=calculation.funding_context,
+            funding_adjusted_score=calculation.funding_adjusted_score,
+            funding_regime=calculation.funding_context.current_regime if calculation.funding_context else None,
+            position_multiplier=calculation.funding_context.position_multiplier if calculation.funding_context else 1.0,
             trace_id=calculation.trace_id,
             processing_time_ms=calculation.processing_time_ms
         )
@@ -165,3 +189,28 @@ class RiskCalculator:
             return "MEDIUM"
         else:
             return "LOW"
+    
+    def _adjust_risk_for_funding(self, base_risk_score: float, funding_context: FundingContext) -> float:
+        """Adjust risk score based on funding context."""
+        # Funding contributes up to 30 additional points to risk score
+        funding_impact = 0.0
+        
+        # Higher funding rates increase risk
+        if funding_context.current_regime == FundingRegime.EXTREME:
+            funding_impact = 30.0
+        elif funding_context.current_regime == FundingRegime.MANIA:
+            funding_impact = 20.0
+        elif funding_context.current_regime == FundingRegime.HEATED:
+            funding_impact = 10.0
+        elif funding_context.current_regime == FundingRegime.NORMAL:
+            funding_impact = 5.0
+        
+        # Volatility adds additional risk
+        if funding_context.volatility_24h > 50:
+            funding_impact += 5.0
+        
+        # Combine base risk with funding impact
+        adjusted_score = base_risk_score + funding_impact
+        
+        # Cap at 100
+        return min(adjusted_score, 100.0)

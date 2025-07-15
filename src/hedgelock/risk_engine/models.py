@@ -7,6 +7,8 @@ from typing import Dict, Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field
 
+from ..shared.funding_models import FundingContext, FundingRegime
+
 
 class RiskState(str, Enum):
     """Risk state levels."""
@@ -70,6 +72,10 @@ class RiskCalculation(BaseModel):
     risk_score: float = Field(description="Overall risk score 0-100")
     risk_factors: Dict[str, float] = Field(default_factory=dict, description="Individual risk factors")
     
+    # Funding context
+    funding_context: Optional[FundingContext] = Field(default=None, description="Current funding context")
+    funding_adjusted_score: Optional[float] = Field(default=None, description="Risk score adjusted for funding")
+    
     # Processing metadata
     processing_time_ms: float = Field(description="Processing time in milliseconds")
     trace_id: Optional[str] = Field(default=None, description="Trace ID for correlation")
@@ -97,6 +103,12 @@ class RiskStateMessage(BaseModel):
     total_collateral_value: float
     total_loan_value: float
     available_collateral: float
+    
+    # Funding context
+    funding_context: Optional[FundingContext] = Field(default=None, description="Current funding context")
+    funding_adjusted_score: Optional[float] = Field(default=None, description="Risk score adjusted for funding")
+    funding_regime: Optional[FundingRegime] = Field(default=None, description="Current funding regime")
+    position_multiplier: Optional[float] = Field(default=None, description="Funding-based position multiplier")
     
     # Metadata
     trace_id: Optional[str] = None

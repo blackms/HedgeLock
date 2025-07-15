@@ -1,28 +1,29 @@
 project:
-  name: "Trading Risk Management System"
-  current_version: "v1.1.0"
-  description: "Event-driven trading system for real-time risk management and automated hedging"
+  name: "HedgeLock: Funding-Aware Volatility Harvesting System"
+  current_version: "v1.2.0"
+  description: "Event-driven trading system with funding rate awareness for volatility harvesting and automated hedging"
   release_date: "2025-07-15"
   release_status: "RELEASED"
 
 architecture:
   type: "Event-driven microservices with Kafka"
   key_layers: 
-    - "Data Collection Layer (Exchange APIs/WebSockets)"
+    - "Data Collection Layer (Exchange APIs/WebSockets + Funding Rates)"
     - "Event Streaming Layer (Kafka)"
-    - "Risk Processing Layer"
-    - "Hedge Execution Layer"
+    - "Funding Analysis Layer (Regime Detection)"
+    - "Risk Processing Layer (Funding-Aware)"
+    - "Hedge Execution Layer (Position Sizing)"
   integration_strategy: "All data flows through Kafka topics with proper schema validation"
 
 current_status:
-  completed_sprints: ["HL-06", "HL-07"]
+  completed_sprints: ["HL-06", "HL-07", "HL-08"]
   active_sprint: null
   integration_debt: "None - all components integrated"
-  sprint_planning: "See SPRINT_PLANNING.yaml for upcoming sprint tasks HL-08 through HL-09"
-  release_notes: "v1.1.0 released with complete Trade Executor implementation - system now fully functional"
+  sprint_planning: "See SPRINT_PLANNING.yaml for upcoming sprint tasks HL-09 and beyond"
+  release_notes: "v1.2.0 released with complete Funding Awareness - system now implements original vision"
 
 critical_context:
-  current_focus: "Trade Executor implemented - system now fully functional"
+  current_focus: "Funding Awareness implemented - system now realizes original vision"
   major_gaps: 
     - "Treasury module for P&L tracking not implemented"
     - "No web dashboard for risk visualization"
@@ -33,10 +34,15 @@ critical_context:
     - "All components fully integrated with Kafka"
     - "Production-ready with monitoring and health checks"
     - "Trade Executor implemented - system can now execute real trades"
+    - "Funding Awareness implemented - position sizing based on funding costs"
+    - "Emergency exit system for extreme funding conditions"
   
 business_impact:
-  primary_goal: "Automated risk management and hedging for trading positions"
+  primary_goal: "Funding-aware volatility harvesting with automated risk management"
   success_metrics:
     - "Real-time position monitoring"
     - "Automated hedge trade execution"
     - "Risk exposure within defined limits"
+    - "Funding cost optimization (50%+ reduction target)"
+    - "Emergency exit during extreme funding conditions"
+    - "Position sizing based on funding regimes"

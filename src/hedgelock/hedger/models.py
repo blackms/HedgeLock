@@ -7,6 +7,8 @@ from typing import Dict, Optional, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
+from ..shared.funding_models import FundingContext, FundingRegime
+
 
 class OrderSide(str, Enum):
     """Order side."""
@@ -39,6 +41,12 @@ class HedgeDecision(BaseModel):
     side: OrderSide
     reason: str
     urgency: str
+    
+    # Funding context
+    funding_adjusted: bool = Field(default=False, description="Whether hedge was adjusted for funding")
+    funding_regime: Optional[FundingRegime] = None
+    position_multiplier: Optional[float] = Field(default=1.0, description="Funding-based position multiplier")
+    
     trace_id: Optional[str] = None
 
 
@@ -94,6 +102,11 @@ class HedgeTradeMessage(BaseModel):
     risk_state: str
     ltv: float
     risk_score: float
+    funding_adjusted_score: Optional[float] = None
+    
+    # Funding context
+    funding_context: Optional[FundingContext] = None
+    funding_cost_24h: Optional[float] = Field(default=None, description="Projected 24h funding cost in USD")
     
     # Metadata
     trace_id: Optional[str] = None

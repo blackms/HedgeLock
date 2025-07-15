@@ -1,19 +1,26 @@
-# HedgeLock - Event-Driven Trading Risk Management System
+# HedgeLock - Funding-Aware Volatility Harvesting System
 
 [![CI/CD Pipeline](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml/badge.svg)](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/blackms/HedgeLock/branch/main/graph/badge.svg?token=f6b6c943-5a31-4967-8c30-003de02a6907)](https://codecov.io/gh/blackms/HedgeLock)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/blackms/HedgeLock/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/blackms/HedgeLock/releases)
 
-An automated trading risk management system that monitors positions in real-time and executes hedge trades based on configurable risk thresholds.
+A sophisticated volatility harvesting system that leverages funding rate inefficiencies while maintaining automated risk management. The system continuously monitors funding rates, adjusts position sizes based on funding costs, and executes funding-aware hedge trades.
 
 ## 🚀 Features
 
-- **Real-time Risk Monitoring**: Continuous LTV and net delta calculation
-- **Automated Hedging**: Risk-based hedge order execution
+### Core Capabilities
+- **Funding Rate Awareness**: Real-time monitoring and regime detection (NEUTRAL → NORMAL → HEATED → MANIA → EXTREME)
+- **Dynamic Position Sizing**: Automatic position multipliers based on funding costs
+- **Emergency Exit System**: Force position closure when funding exceeds 300% APR
+- **Real-time Risk Monitoring**: Continuous LTV and net delta calculation with funding adjustments
+- **Automated Hedging**: Funding-aware hedge order execution
+
+### Technical Features
 - **Event-Driven Architecture**: Kafka-based microservices with <150ms latency
-- **Exchange Integration**: Bybit WebSocket + REST API support
+- **Exchange Integration**: Bybit WebSocket + REST API support with funding data
 - **Production Ready**: Health checks, structured logging, Prometheus metrics
 - **Resilient Design**: Automatic reconnection, error recovery, message deduplication
+- **100% Test Coverage**: Comprehensive unit and integration tests with CI/CD pipeline
 
 ## 📊 System Architecture
 
@@ -21,14 +28,25 @@ An automated trading risk management system that monitors positions in real-time
 graph LR
     A[Bybit APIs] -->|WebSocket/REST| B[Collector]
     B -->|account_raw| C[Kafka]
-    C -->|consume| D[Risk Engine]
-    D -->|risk_state| C
-    C -->|consume| E[Hedger]
-    E -->|hedge_trades| C
-    C -->|consume| F[Trade Executor]
-    F -->|execute| A
-    F -->|trade_confirmations| C
+    B -->|funding_rates| C
+    C -->|consume| D[Funding Engine]
+    D -->|funding_context| C
+    C -->|consume| E[Risk Engine]
+    E -->|risk_state| C
+    C -->|consume| F[Hedger]
+    F -->|hedge_trades| C
+    C -->|consume| G[Trade Executor]
+    G -->|execute| A
+    G -->|trade_confirmations| C
 ```
+
+### Key Components
+
+1. **Collector**: Gathers account data and funding rates from Bybit API
+2. **Funding Engine**: Analyzes funding rates and detects regime changes
+3. **Risk Engine**: Calculates funding-adjusted risk scores and states
+4. **Hedger**: Applies funding-based position multipliers to hedge decisions
+5. **Trade Executor**: Executes trades on exchange with confirmation tracking
 
 
 ## 🏗️ Quick Start

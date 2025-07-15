@@ -16,6 +16,8 @@ components:
     business_impact: "Data flow channels for trading decisions"
     topics:
       account_raw: "Raw account and position data from exchanges"
+      funding_rates: "Funding rate data from exchanges"
+      funding_context: "Processed funding context with regime detection"
       risk_state: "Processed risk calculations and alerts"
       hedge_trades: "Hedge trade instructions for execution"
       trade_confirmations: "Executed trade confirmations with fill details"
@@ -31,18 +33,21 @@ components:
       "src/hedgelock/collector/websocket_client.py",
       "src/hedgelock/collector/kafka_producer.py",
       "tests/collector/test_main.py",
-      "tests/collector/test_models.py"
+      "tests/collector/test_models.py",
+      "tests/unit/collector/test_rest_client_funding.py"
     ]
-    integration_files: ["risk_engine", "monitoring_dashboard"]
+    integration_files: ["risk_engine", "funding_engine", "monitoring_dashboard"]
     integration_todos: []
-    business_impact: "Real-time position and collateral monitoring"
+    business_impact: "Real-time position and collateral monitoring with funding awareness"
     data_sources:
       - "/v5/account/collateral-info (5s polling)"
       - "/v5/ins-loan/loan-info (5s polling)" 
       - "BTC-PERP position WebSocket"
-    output_topic: "account_raw"
-    last_updated: "2025-07-07"
-    sprint: "HL-06-2"
+      - "/v5/market/funding/history (hourly polling)"
+      - "/v5/market/tickers (current funding rates)"
+    output_topics: ["account_raw", "funding_rates"]
+    last_updated: "2025-07-15"
+    sprint: "HL-06-2, HL-08-3"
 
   risk_calculation_engine:
     status: "INTEGRATED"
@@ -50,14 +55,15 @@ components:
       "src/hedgelock/risk_engine/main.py",
       "src/hedgelock/risk_engine/models.py",
       "src/hedgelock/risk_engine/calculator.py",
-      "tests/risk_engine/test_main.py"
+      "tests/risk_engine/test_main.py",
+      "tests/unit/risk_engine/test_funding_integration.py"
     ]
-    integration_files: ["consumer from account_raw", "producer to risk_state"]
+    integration_files: ["consumer from account_raw", "consumer from funding_context", "producer to risk_state"]
     integration_todos: []
-    business_impact: "Core risk management and hedge decision making"
-    sprint: "HL-06-4"
-    last_updated: "2025-07-07"
-    notes: "RiskEngine v1.0 - Computing LTV, NetΔ, emitting risk states"
+    business_impact: "Core risk management and hedge decision making with funding awareness"
+    sprint: "HL-06-4, HL-08-6"
+    last_updated: "2025-07-15"
+    notes: "RiskEngine v1.1 - Computing LTV, NetΔ, funding-adjusted risk scores"
     
   hedge_execution_engine:
     status: "INTEGRATED"
@@ -65,14 +71,15 @@ components:
       "src/hedgelock/hedger/main.py",
       "src/hedgelock/hedger/models.py",
       "src/hedgelock/hedger/bybit_client.py",
-      "tests/hedger/test_main.py"
+      "tests/hedger/test_main.py",
+      "tests/unit/hedger/test_funding_hedging.py"
     ]
     integration_files: ["consumer from risk_state", "producer to hedge_trades"]
     integration_todos: []
-    business_impact: "Automated hedge trade execution"
-    sprint: "HL-06-6"
-    last_updated: "2025-07-07"
-    notes: "Hedger v0.9 - Testnet market orders based on risk states"
+    business_impact: "Automated hedge trade execution with funding-based position sizing"
+    sprint: "HL-06-6, HL-08-7"
+    last_updated: "2025-07-15"
+    notes: "Hedger v1.1 - Funding-aware position sizing with emergency exit"
     
   trade_executor:
     status: "INTEGRATED"
@@ -101,6 +108,37 @@ components:
     last_updated: "2025-07-15"
     notes: "Trade Executor v1.0 - Complete trade execution with <150ms latency target"
     
+  funding_engine:
+    status: "INTEGRATED"
+    implementation_files: [
+      "src/hedgelock/funding_engine/__init__.py",
+      "src/hedgelock/funding_engine/api.py",
+      "src/hedgelock/funding_engine/service.py",
+      "src/hedgelock/funding_engine/config.py",
+      "src/hedgelock/funding_engine/kafka_config.py",
+      "src/hedgelock/funding_engine/storage.py",
+      "src/hedgelock/shared/funding_models.py",
+      "src/hedgelock/shared/funding_calculator.py",
+      "tests/unit/funding_engine/test_service.py",
+      "tests/unit/funding_engine/test_storage.py",
+      "tests/unit/funding_engine/test_api.py",
+      "tests/unit/shared/test_funding_models.py",
+      "tests/unit/shared/test_funding_calculator.py"
+    ]
+    integration_files: ["consumer from funding_rates", "producer to funding_context", "Redis storage"]
+    integration_todos: []
+    business_impact: "Core funding awareness system enabling volatility harvesting"
+    features:
+      - "Funding regime detection (NEUTRAL → NORMAL → HEATED → MANIA → EXTREME)"
+      - "Position multiplier calculation based on funding costs"
+      - "7-day funding rate history storage"
+      - "Real-time funding context updates"
+      - "Emergency exit triggers for extreme funding"
+      - "FastAPI endpoints for monitoring"
+    sprint: "HL-08-5"
+    last_updated: "2025-07-15"
+    notes: "Funding Engine v1.0 - Complete funding awareness implementation"
+    
   config_management:
     status: "INTEGRATED"
     implementation_files: ["src/hedgelock/config.py"]
@@ -123,13 +161,16 @@ components:
     status: "INTEGRATED"
     implementation_files: [
       "tests/integration/test_pipeline.py",
-      "tests/integration/test_collector_soak.py"
+      "tests/integration/test_collector_soak.py",
+      "tests/integration/funding/test_funding_flow.py",
+      "docker-compose.test.yml",
+      ".github/workflows/ci-cd.yml"
     ]
-    integration_files: ["CI/CD pipeline", "All services"]
+    integration_files: ["CI/CD pipeline", "All services", "Funding flow testing"]
     integration_todos: []
-    business_impact: "Quality assurance for trading pipeline"
-    sprint: "HL-06-7"
-    last_updated: "2025-07-07"
+    business_impact: "Quality assurance for trading pipeline and funding awareness"
+    sprint: "HL-06-7, HL-08-8"
+    last_updated: "2025-07-15"
     
   treasury_module:
     status: "NOT_IMPLEMENTED"

@@ -1,0 +1,405 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
+  POETRY_VERSION: '1.7.0'
+  
+jobs:
+  # Code Quality Checks
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+        
+      - name: Install project
+        run: poetry install --no-interaction
+        
+      - name: Run Black
+        run: poetry run black --check src/ tests/
+        
+      - name: Run isort
+        run: poetry run isort --check-only src/ tests/
+        
+      - name: Run Flake8
+        run: poetry run flake8 src/ tests/
+        
+      - name: Run MyPy
+        run: poetry run mypy src/ --ignore-missing-imports
+        
+      - name: Run pylint
+        run: poetry run pylint src/ --disable=R0903,R0801,W0212
+
+  # Security Scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          
+      - name: Install dependencies
+        run: poetry install --no-interaction
+        
+      - name: Run Bandit security scan
+        run: poetry run bandit -r src/ -ll -f json -o bandit-report.json
+        continue-on-error: true
+        
+      - name: Upload Bandit results
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-results
+          path: bandit-report.json
+          
+      - name: Run Safety check
+        run: poetry run safety check --json --output safety-report.json
+        continue-on-error: true
+        
+      - name: Upload Safety results
+        uses: actions/upload-artifact@v3
+        with:
+          name: safety-results
+          path: safety-report.json
+          
+      - name: Run pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit --desc --format json --output pip-audit-report.json
+        continue-on-error: true
+        
+      - name: Upload pip-audit results
+        uses: actions/upload-artifact@v3
+        with:
+          name: pip-audit-results
+          path: pip-audit-report.json
+
+  # Unit Tests with Coverage
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          
+      - name: Install dependencies
+        run: poetry install --no-interaction
+        
+      - name: Run unit tests with coverage
+        run: |
+          poetry run pytest tests/unit/ \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --cov-fail-under=100 \
+            -v
+            
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-html-${{ matrix.python-version }}
+          path: htmlcov/
+          
+      - name: Check coverage threshold
+        run: |
+          coverage_percent=$(poetry run coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//')
+          if (( $(echo "$coverage_percent < 100" | bc -l) )); then
+            echo "Coverage is below 100% threshold: $coverage_percent%"
+            exit 1
+          fi
+
+  # Integration Tests
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      kafka:
+        image: confluentinc/cp-kafka:7.5.0
+        ports:
+          - 9092:9092
+        env:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        options: >-
+          --health-cmd "kafka-broker-api-versions --bootstrap-server localhost:9092"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+      zookeeper:
+        image: confluentinc/cp-zookeeper:7.5.0
+        ports:
+          - 2181:2181
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_TICK_TIME: 2000
+          
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          
+      - name: Install dependencies
+        run: poetry install --no-interaction
+        
+      - name: Wait for services
+        run: |
+          for i in {1..30}; do
+            if nc -zv localhost 9092 && nc -zv localhost 6379; then
+              echo "Services are ready"
+              break
+            fi
+            echo "Waiting for services... ($i/30)"
+            sleep 2
+          done
+          
+      - name: Run integration tests
+        run: |
+          poetry run pytest tests/integration/ \
+            --cov=src \
+            --cov-report=xml \
+            --cov-append \
+            -v
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          
+      - name: Upload integration test coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: integration
+          name: codecov-integration
+
+  # Docker Build Test
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [collector, risk-engine, hedger, trade-executor, funding-engine]
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.${{ matrix.service }}
+          push: false
+          tags: hedgelock/${{ matrix.service }}:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: hedgelock/${{ matrix.service }}:test
+          format: 'sarif'
+          output: 'trivy-${{ matrix.service }}.sarif'
+          
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-${{ matrix.service }}.sarif'
+
+  # SonarCloud Analysis
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          
+      - name: Install dependencies
+        run: poetry install --no-interaction
+        
+      - name: Run tests with coverage
+        run: |
+          poetry run pytest --cov=src --cov-report=xml --cov-report=term
+          
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # License Check
+  license-check:
+    name: License Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          
+      - name: Check licenses
+        run: |
+          pip install pip-licenses
+          poetry export -f requirements.txt --output requirements.txt
+          pip-licenses --from=mixed --format=json --output-file=licenses.json
+          
+      - name: Upload license report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-report
+          path: licenses.json
+
+  # Performance Tests
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction
+          pip install pytest-benchmark
+          
+      - name: Run performance benchmarks
+        run: |
+          poetry run pytest tests/performance/ \
+            --benchmark-only \
+            --benchmark-json=benchmark.json \
+            --benchmark-min-rounds=10
+            
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: benchmark.json
+          
+      - name: Comment PR with results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'pytest'
+          output-file-path: benchmark.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          comment-on-alert: true
+
+  # All tests passed
+  all-tests-passed:
+    name: All Tests Passed
+    runs-on: ubuntu-latest
+    needs: [quality, security, test-unit, test-integration, docker-build]
+    steps:
+      - name: All tests passed
+        run: echo "All tests passed successfully!"

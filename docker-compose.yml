@@ -121,6 +121,39 @@ services:
       timeout: 3s
       retries: 3
 
+  # Funding Engine service
+  funding-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.funding-engine
+    container_name: hedgelock-funding-engine
+    environment:
+      - SERVICE_NAME=hedgelock-funding-engine
+      - LOG_LEVEL=INFO
+      - FUNDING_ENGINE_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - FUNDING_ENGINE_CONSUMER_GROUP_ID=funding-engine-group
+      - FUNDING_ENGINE_FUNDING_RATES_TOPIC=funding_rates
+      - FUNDING_ENGINE_FUNDING_CONTEXT_TOPIC=funding_context
+      - FUNDING_ENGINE_REDIS_HOST=redis
+      - FUNDING_ENGINE_REDIS_PORT=6379
+      - FUNDING_ENGINE_HISTORY_WINDOW_HOURS=168
+      - FUNDING_ENGINE_REGIME_UPDATE_INTERVAL_SECONDS=60
+      - FUNDING_ENGINE_METRICS_PORT=9095
+    ports:
+      - "8005:8005"
+      - "9095:9095"
+    networks:
+      - hedgelock-network
+    depends_on:
+      - kafka
+      - redis
+      - collector
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
   # Fund management service
   treasury:
     build:
@@ -162,7 +195,7 @@ services:
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
     ports:
-      - "8005:8000"
+      - "8006:8000"
     networks:
       - hedgelock-network
     depends_on:

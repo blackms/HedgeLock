@@ -163,32 +163,61 @@ class HedgerService:
         """Create hedge decision based on risk state."""
         recommendation = risk_message.hedge_recommendation
         
-        # Validate hedge size
-        hedge_size = abs(recommendation["quantity"])
+        # Get base hedge size
+        base_hedge_size = abs(recommendation["quantity"])
         
-        if hedge_size < self.config.hedger.min_order_size_btc:
+        # Apply funding-based position multiplier
+        position_multiplier = risk_message.position_multiplier or 1.0
+        adjusted_hedge_size = base_hedge_size * position_multiplier
+        
+        # Log funding adjustment
+        if position_multiplier != 1.0:
             logger.info(
-                f"Hedge size too small: {hedge_size} < {self.config.hedger.min_order_size_btc}"
+                f"Adjusting hedge size for funding: {base_hedge_size:.4f} * {position_multiplier:.2f} = {adjusted_hedge_size:.4f}",
+                funding_regime=risk_message.funding_regime.value if risk_message.funding_regime else "UNKNOWN",
+                funding_rate=risk_message.funding_context.current_rate if risk_message.funding_context else None
             )
-            return None
         
-        if hedge_size > self.config.hedger.max_position_size_btc:
+        # Check for emergency exit due to extreme funding
+        if risk_message.funding_context and risk_message.funding_context.should_exit:
             logger.warning(
-                f"Hedge size exceeds limit: {hedge_size} > {self.config.hedger.max_position_size_btc}"
+                "EMERGENCY: Extreme funding detected - closing all positions",
+                funding_rate=risk_message.funding_context.current_rate,
+                funding_regime=risk_message.funding_regime.value
             )
-            hedge_size = self.config.hedger.max_position_size_btc
-        
-        # Determine order side
-        side = OrderSide.BUY if recommendation["action"] == "BUY" else OrderSide.SELL
+            # Override to close entire position
+            adjusted_hedge_size = abs(risk_message.net_delta)
+            side = OrderSide.SELL if risk_message.net_delta > 0 else OrderSide.BUY
+            recommendation["reason"] = f"EMERGENCY EXIT: Extreme funding {risk_message.funding_context.current_rate:.1f}% APR"
+            recommendation["urgency"] = "IMMEDIATE"
+        else:
+            # Validate hedge size
+            if adjusted_hedge_size < self.config.hedger.min_order_size_btc:
+                logger.info(
+                    f"Hedge size too small: {adjusted_hedge_size} < {self.config.hedger.min_order_size_btc}"
+                )
+                return None
+            
+            if adjusted_hedge_size > self.config.hedger.max_position_size_btc:
+                logger.warning(
+                    f"Hedge size exceeds limit: {adjusted_hedge_size} > {self.config.hedger.max_position_size_btc}"
+                )
+                adjusted_hedge_size = self.config.hedger.max_position_size_btc
+            
+            # Determine order side
+            side = OrderSide.BUY if recommendation["action"] == "BUY" else OrderSide.SELL
         
         return HedgeDecision(
             risk_state=risk_message.risk_state.value,
             current_delta=risk_message.net_delta,
-            target_delta=recommendation["quantity"] + risk_message.net_delta,
-            hedge_size=hedge_size,
+            target_delta=recommendation["quantity"] + risk_message.net_delta if not (risk_message.funding_context and risk_message.funding_context.should_exit) else 0.0,
+            hedge_size=adjusted_hedge_size,
             side=side,
             reason=recommendation["reason"],
             urgency=recommendation["urgency"],
+            funding_adjusted=position_multiplier != 1.0,
+            funding_regime=risk_message.funding_regime,
+            position_multiplier=position_multiplier,
             trace_id=risk_message.trace_id
         )
     
@@ -206,6 +235,14 @@ class HedgerService:
             orderLinkId=f"HL-{uuid.uuid4().hex[:8]}"
         )
         
+        # Calculate funding cost if context available
+        funding_cost_24h = None
+        if risk_message.funding_context:
+            # Calculate projected 24h funding cost for the hedge position
+            position_value = decision.hedge_size * 50000  # Assume BTC at $50k
+            funding_rate_8h = risk_message.funding_context.current_rate / 100 / 365 / 3
+            funding_cost_24h = position_value * funding_rate_8h * 3  # 3 periods in 24h
+        
         # Create hedge trade message
         hedge_trade = HedgeTradeMessage(
             hedge_decision=decision,
@@ -213,6 +250,9 @@ class HedgerService:
             risk_state=risk_message.risk_state.value,
             ltv=risk_message.ltv,
             risk_score=risk_message.risk_score,
+            funding_adjusted_score=risk_message.funding_adjusted_score,
+            funding_context=risk_message.funding_context,
+            funding_cost_24h=funding_cost_24h,
             trace_id=trace_id,
             testnet=self.config.bybit.testnet
         )
