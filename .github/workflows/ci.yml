@@ -109,8 +109,6 @@ jobs:
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
         ports:
           - 9092:9092
-        depends_on:
-          - zookeeper
 
     steps:
       - name: Checkout code
@@ -166,7 +164,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [collector, risk-engine, hedger]
+        service: [collector, risk-engine, hedger, funding-engine]
     
     steps:
       - name: Checkout code
@@ -213,7 +211,7 @@ jobs:
     if: github.event_name != 'pull_request'
     strategy:
       matrix:
-        service: [collector, risk-engine, hedger]
+        service: [collector, risk-engine, hedger, funding-engine]
     steps:
       - name: Wait for image to be available
         run: |
