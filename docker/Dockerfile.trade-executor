@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY pyproject.toml poetry.lock ./
+
+# Install Poetry and dependencies
+RUN pip install poetry && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-dev --no-interaction --no-ansi
+
+# Copy source code
+COPY src/hedgelock/__init__.py src/hedgelock/
+COPY src/hedgelock/trade_executor src/hedgelock/trade_executor/
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
+EXPOSE 8004
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8004/health').raise_for_status()"
+
+# Run the service
+CMD ["python", "-m", "src.hedgelock.trade_executor.api"]

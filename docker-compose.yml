@@ -88,6 +88,39 @@ services:
       timeout: 3s
       retries: 3
 
+  # Trade Executor service
+  trade-executor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.trade-executor
+    container_name: hedgelock-trade-executor
+    environment:
+      - SERVICE_NAME=hedgelock-trade-executor
+      - LOG_LEVEL=INFO
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CONSUMER_GROUP=trade-executor-group
+      - KAFKA_TOPIC_HEDGE_TRADES=hedge_trades
+      - KAFKA_TOPIC_TRADE_CONFIRMATIONS=trade_confirmations
+      - BYBIT_API_KEY=${BYBIT_API_KEY:-}
+      - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
+      - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
+      - EXECUTOR_MAX_ORDER_SIZE_BTC=1.0
+      - EXECUTOR_MAX_DAILY_VOLUME_BTC=10.0
+      - EXECUTOR_METRICS_PORT=9094
+    ports:
+      - "8004:8004"
+      - "9094:9094"
+    networks:
+      - hedgelock-network
+    depends_on:
+      - kafka
+      - hedger
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
   # Fund management service
   treasury:
     build:
@@ -261,6 +294,7 @@ services:
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic account_raw --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic risk_state --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic hedge_trades --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic trade_confirmations --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic treasury_actions --partitions 3 --replication-factor 1
       
       echo 'Listing all topics:'
