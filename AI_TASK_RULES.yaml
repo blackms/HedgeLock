@@ -1,0 +1,263 @@
+# HedgeLock AI Coding Agent - Task Execution Rules
+# Version: 1.0
+# Description: Machine-readable protocol for all development tasks in HedgeLock project,
+#              ensuring consistent standards for coding, testing, documentation, and releases.
+
+context:
+  project: "HedgeLock - Event-driven trading risk management system"
+  architecture: "Python FastAPI microservices with Apache Kafka"
+  current_version: "1.0.0"
+
+protocol:
+  codeStandards:
+    maxFileLength:
+      softLimit: 300
+      hardLimit: 500
+    refactoringThreshold: "20%"
+    modularityPrinciple: "Files and modules must adhere to the Single Responsibility Principle (SRP). Each file should manage one distinct aspect of the application's functionality. For HedgeLock, this means separating API endpoints, Kafka handlers, business logic, and models into distinct modules."
+    refactoringRule: "If, after modification, a file's line count exceeds the hardLimit by more than the refactoringThreshold (e.g., > 600 lines for a 500-line limit), the agent MUST immediately pause the current task, create a new refactoring sub-task to split the oversized file into smaller, cohesive modules, and only resume the original task after the refactoring is complete and committed."
+    
+    pythonSpecific:
+      - "Use type hints for all function parameters and return values"
+      - "Follow PEP 8 style guide, enforced by Black formatter"
+      - "Use async/await for all I/O operations"
+      - "Pydantic models for all data validation"
+      - "Structured logging with trace_id for distributed tracing"
+
+  taskPlan:
+    goal: "{SPECIFIC_GOAL_OF_THE_TASK}"
+    prerequisites:
+      - "Verify Docker environment is running: make compose-ps"
+      - "Ensure all tests pass: make test"
+      - "Check linting compliance: make lint"
+    tasks:
+      - id: 1.1
+        description: "{First specific task}"
+        target_file: "{src/hedgelock/service/file.py}"
+        kafka_topic: "{relevant_topic if applicable}"
+        status: "pending"
+      - id: 1.2
+        description: "{Second specific task}"
+        target_file: "{src/hedgelock/service/file.py}"
+        status: "pending"
+      - id: 1.3
+        description: "{Third specific task}"
+        target_file: "{tests/integration/test_file.py}"
+        status: "pending"
+
+  taskInitialization:
+    - description: "Acknowledge the primary objective of the task"
+      action: "state_objective"
+      input: "{context.task}"
+    - description: "Create Sprint documentation in dev_journaling/"
+      action: "create_sprint_doc"
+      template: "/dev_journaling/SPRINT_{SPRINT_ID}_{COMPONENT}.md"
+      contents:
+        - "Sprint objective and rationale"
+        - "Architecture design decisions"
+        - "Task breakdown with detailed steps"
+        - "Success criteria and progress tracking"
+        - "Technical considerations and risks"
+      rationale: "Document what we're doing, why we're doing it, and the reasoning behind decisions"
+    - description: "Create a new Git branch for the task"
+      action: "execute_command"
+      command: "git checkout -b {BRANCH_TYPE}/{SPRINT_ID}-{SHORT_TASK_SUMMARY}"
+      branchNameConvention:
+        format: "[type]/[sprint-id]-[short-task-summary]"
+        examples:
+          - "feat/HL-07-1-trade-executor"
+          - "fix/HL-07-2-kafka-consumer-timeout"
+          - "docs/HL-07-3-api-documentation"
+    - description: "Update todo list with task breakdown"
+      action: "todo_write"
+      tasks: "{taskPlan.tasks}"
+
+  development:
+    description: "Execute the task plan following HedgeLock integration-first approach"
+    loopUntil: "all_tasks_in_taskPlan_are_complete"
+    steps:
+      - description: "Select the next pending task and mark as in_progress"
+        action: "select_task"
+        update_todo: true
+      
+      - description: "For Kafka integration tasks, verify producer/consumer first"
+        condition: "task involves Kafka"
+        actions:
+          - "Test Kafka connectivity: make kafka-topics"
+          - "Verify topic exists or create it"
+          - "Test producer/consumer with dummy data"
+      
+      - description: "Break the selected task into sub-steps"
+        action: "generate_sub_steps"
+        considerations:
+          - "Integration tests before unit tests"
+          - "Health checks and monitoring included"
+          - "Error handling and reconnection logic"
+      
+      - description: "Iterate through the generated sub-steps"
+        loopUntil: "all_sub_steps_for_current_task_are_complete"
+        sub_step_actions:
+          - action: "write_or_modify_code"
+            constraints:
+              - "Follow existing patterns in src/hedgelock/"
+              - "Use structured logging with trace_id"
+              - "Include Prometheus metrics"
+          
+          - action: "self_check_code"
+            checks:
+              - "Type hints present"
+              - "Docstrings for public methods"
+              - "Error handling implemented"
+              - "File size within limits"
+          
+          - action: "run_tests"
+            commands:
+              - "make test"
+              - "make lint"
+          
+          - action: "execute_command"
+            command: "git add -A && git commit -m '{COMMIT_TYPE}({SPRINT_ID}): {SUB_STEP_DESCRIPTION}'"
+            commitMessageFormat:
+              pattern: "[type]([sprint-id]): [description]"
+              types: ["feat", "fix", "docs", "test", "refactor", "perf", "chore"]
+              examples:
+                - "feat(HL-07-1): implement trade executor Kafka consumer"
+                - "fix(HL-07-2): handle WebSocket reconnection in collector"
+                - "test(HL-07-1): add integration tests for trade execution"
+          
+          - action: "execute_command"
+            command: "git push origin {BRANCH_TYPE}/{SPRINT_ID}-{SHORT_TASK_SUMMARY}"
+      
+      - description: "Mark task as complete in todo list"
+        action: "update_task_status"
+        status: "completed"
+
+  testing:
+    description: "Comprehensive testing for HedgeLock microservices"
+    requirements:
+      - "Integration tests for all Kafka data flows"
+      - "Soak tests for 5+ minute continuous operation"
+      - "Performance validation: <150ms latency"
+      - "60% minimum code coverage"
+    steps:
+      - action: "run_unit_tests"
+        command: "make test"
+      - action: "run_integration_tests"
+        command: "make test-integration"
+      - action: "verify_kafka_flow"
+        commands:
+          - "make compose-logs | grep ERROR"
+          - "make kafka-consumer-groups"
+      - action: "check_coverage"
+        command: "make test-cov"
+        threshold: "60%"
+
+  documentation:
+    description: "Update HedgeLock documentation"
+    steps:
+      - action: "update_sprint_journal"
+        target: "/dev_journaling/SPRINT_{SPRINT_ID}_{COMPONENT}.md"
+        updates:
+          - "Progress on each task (mark completed)"
+          - "Decisions made during implementation"
+          - "Problems encountered and solutions"
+          - "Lessons learned"
+        rationale: "Maintain a development journal explaining the 'why' behind code changes"
+      
+      - action: "update_file"
+        targets:
+          - "README.md"
+          - "CLAUDE.md"
+          - "/docs/{relevant_doc}.md"
+          - "/project_memory/PROJECT_MEMORY.yaml"
+          - "/project_memory/COMPONENT_MAP.yaml"
+        guidelines:
+          - "Update component integration status"
+          - "Document new Kafka topics"
+          - "Add new API endpoints"
+          - "Update configuration requirements"
+      
+      - action: "generate_api_docs"
+        condition: "API changes made"
+        command: "python -m src.hedgelock.{service}.api --generate-openapi"
+      
+      - action: "execute_command"
+        command: "git add -A && git commit -m 'docs: update documentation for {SPRINT_ID}'"
+      
+      - action: "execute_command"
+        command: "git push origin {BRANCH_TYPE}/{SPRINT_ID}-{SHORT_TASK_SUMMARY}"
+
+  release:
+    description: "Merge, version, and release following HedgeLock conventions"
+    preReleaseChecks:
+      - "All services healthy: curl http://localhost:800{1-5}/health"
+      - "Kafka topics active: make kafka-topics"
+      - "No errors in logs: make compose-logs | grep ERROR"
+      - "Tests passing: make test && make lint"
+    
+    steps:
+      - action: "create_pull_request"
+        command: "gh pr create --title '{COMMIT_TYPE}({SPRINT_ID}): {TASK_SUMMARY}' --body '{TASK_DESCRIPTION}'"
+      
+      - action: "merge_after_approval"
+        commands:
+          - "git checkout main"
+          - "git pull origin main"
+          - "git merge --no-ff --no-edit {BRANCH_TYPE}/{SPRINT_ID}-{SHORT_TASK_SUMMARY}"
+      
+      - action: "determine_version"
+        scan_command: "git log --oneline --no-merges main..HEAD"
+        versioning_rules:
+          - increment: "MAJOR"
+            for_commit_containing: "BREAKING CHANGE:"
+          - increment: "MINOR"
+            for_commit_prefix: ["feat:", "refactor:"]
+          - increment: "PATCH"
+            for_commit_prefix: ["fix:", "perf:", "docs:", "chore:", "style:"]
+      
+      - action: "update_version_files"
+        files:
+          - "pyproject.toml"
+          - "src/hedgelock/__version__.py"
+      
+      - action: "execute_release_flow"
+        commands:
+          - "git tag v{NEW_VERSION}"
+          - "git push origin v{NEW_VERSION}"
+          - "gh release create v{NEW_VERSION} --generate-notes"
+      
+      - action: "update_project_memory"
+        description: "Update sprint completion status"
+        target: "/project_memory/SPRINT_PLANNING.yaml"
+
+  errorHandling:
+    description: "Standard error handling procedures"
+    onFileExceedsLimit:
+      - "Immediately stop current task"
+      - "Create refactoring task in todo list"
+      - "Split file following SRP principle"
+      - "Update imports in dependent files"
+      - "Run tests to ensure no breakage"
+      - "Commit refactoring separately"
+      - "Resume original task"
+    
+    onTestFailure:
+      - "Do not proceed with commits"
+      - "Fix failing tests first"
+      - "If blocked, document in todo list"
+      - "Create new task for resolution"
+    
+    onKafkaError:
+      - "Check Docker services: make compose-ps"
+      - "Verify topic exists: make kafka-topics"
+      - "Check consumer groups: make kafka-consumer-groups"
+      - "Review service logs: make logs-{service}"
+
+  bestPractices:
+    - "Always use make commands from Makefile"
+    - "Test Kafka integration before implementing business logic"
+    - "Include trace_id in all log messages"
+    - "Expose Prometheus metrics for new features"
+    - "Follow existing service structure in src/hedgelock/"
+    - "Update PROJECT_MEMORY.yaml after significant changes"
+    - "Never commit without running tests and linting"

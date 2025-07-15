@@ -127,6 +127,9 @@ logs-risk:
 logs-hedger:
 	docker compose logs -f hedger
 
+logs-trade-executor:
+	docker compose logs -f trade-executor
+
 logs-treasury:
 	docker compose logs -f treasury
 

@@ -18,6 +18,7 @@ components:
       account_raw: "Raw account and position data from exchanges"
       risk_state: "Processed risk calculations and alerts"
       hedge_trades: "Hedge trade instructions for execution"
+      trade_confirmations: "Executed trade confirmations with fill details"
     last_updated: "2025-07-07"
     sprint: "HL-06-1"
     
@@ -74,14 +75,31 @@ components:
     notes: "Hedger v0.9 - Testnet market orders based on risk states"
     
   trade_executor:
-    status: "NOT_IMPLEMENTED"
-    implementation_files: []
-    integration_files: ["consumer from hedge_trades", "exchange APIs"]
-    integration_todos:
-      - "Consumer for hedge_trades topic"
-      - "Integration with exchange trade APIs"
-      - "Trade confirmation and status updates"
-    business_impact: "Actual hedge trade execution on exchanges"
+    status: "INTEGRATED"
+    implementation_files: [
+      "src/hedgelock/trade_executor/__init__.py",
+      "src/hedgelock/trade_executor/api.py",
+      "src/hedgelock/trade_executor/service.py",
+      "src/hedgelock/trade_executor/models.py",
+      "src/hedgelock/trade_executor/config.py",
+      "src/hedgelock/trade_executor/kafka_config.py",
+      "src/hedgelock/trade_executor/bybit_client.py",
+      "src/hedgelock/trade_executor/utils.py",
+      "tests/integration/trade_executor/test_trade_execution_flow.py"
+    ]
+    integration_files: ["consumer from hedge_trades", "producer to trade_confirmations", "Bybit API"]
+    integration_todos: []
+    business_impact: "Actual hedge trade execution on exchanges with confirmation tracking"
+    features:
+      - "Consumes hedge trade decisions from Kafka"
+      - "Executes market orders on Bybit exchange"
+      - "Tracks order status until filled"
+      - "Publishes trade confirmations"
+      - "Rate limiting and safety checks"
+      - "Comprehensive error handling with retries"
+    sprint: "HL-07"
+    last_updated: "2025-07-15"
+    notes: "Trade Executor v1.0 - Complete trade execution with <150ms latency target"
     
   config_management:
     status: "INTEGRATED"
