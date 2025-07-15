@@ -67,13 +67,26 @@ hedge_trades topic → Trade Executor → Bybit API
 **Status**: Completed  
 **Rationale**: Document the plan before implementation to ensure clarity and alignment.
 
-### Task 2: Design Trade Executor Architecture (HL-07-2)
-**Status**: In Progress  
+### Task 2: Design Trade Executor Architecture (HL-07-2) ✅
+**Status**: Completed  
 **Deliverables**:
-- Define service interfaces and models
-- Design Kafka message schemas
-- Plan Bybit API integration approach
-- Document error handling strategy
+- ✅ Defined service interfaces and models in `models.py`
+- ✅ Designed Kafka message schemas (TradeExecution, TradeConfirmation)
+- ✅ Planned Bybit API integration approach with rate limiting
+- ✅ Documented error handling strategy with retry logic
+
+**Implementation Details**:
+- Created comprehensive data models for trade execution lifecycle
+- Designed ExecutionStatus enum to track order states
+- Added ExecutionError model for structured error handling
+- Created TradeConfirmation message for the confirmations topic
+- Implemented configuration structure with safety limits
+
+**Key Design Decisions**:
+1. **Idempotency**: Using order_link_id as client order ID
+2. **Rate Limiting**: Configured 10 orders/second limit
+3. **Safety Limits**: Max 1 BTC per order, 10 BTC daily volume
+4. **Retry Logic**: 3 retries with exponential backoff
 
 **Rationale**: Clear architecture prevents rework and ensures all edge cases are considered.
 
