@@ -2,7 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml/badge.svg)](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/blackms/HedgeLock/branch/main/graph/badge.svg?token=f6b6c943-5a31-4967-8c30-003de02a6907)](https://codecov.io/gh/blackms/HedgeLock)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/blackms/HedgeLock/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/blackms/HedgeLock/releases)
 
 An automated trading risk management system that monitors positions in real-time and executes hedge trades based on configurable risk thresholds.
 
@@ -25,13 +25,11 @@ graph LR
     D -->|risk_state| C
     C -->|consume| E[Hedger]
     E -->|hedge_trades| C
-    C -->|consume| F[Trade Executor*]
+    C -->|consume| F[Trade Executor]
     F -->|execute| A
-    
-    style F stroke-dasharray: 5 5
+    F -->|trade_confirmations| C
 ```
 
-*Trade Executor coming in v1.1.0
 
 ## 🏗️ Quick Start
 
@@ -65,6 +63,7 @@ graph LR
    curl http://localhost:8001/healthz  # Collector
    curl http://localhost:8002/healthz  # Risk Engine
    curl http://localhost:8003/healthz  # Hedger
+   curl http://localhost:8004/healthz  # Trade Executor
    ```
 
 5. **Monitor Kafka topics**
@@ -111,8 +110,14 @@ HEDGER__MAX_POSITION_SIZE_BTC=10.0
 ### Hedger Service (Port 8003)
 - Consumes `risk_state` messages
 - Generates hedge orders based on risk level
-- Executes trades on Bybit testnet
-- Publishes execution results to `hedge_trades` topic
+- Publishes hedge decisions to `hedge_trades` topic
+
+### Trade Executor Service (Port 8004)
+- Consumes `hedge_trades` messages
+- Executes actual trades on Bybit exchange
+- Tracks order status until filled
+- Publishes confirmations to `trade_confirmations` topic
+- Implements rate limiting and safety checks
 
 ## 🧪 Testing
 
@@ -142,9 +147,15 @@ poetry run pytest tests/integration/
 - ✅ Automated hedge order generation
 - ✅ Production-ready monitoring and logging
 
-### v1.1.0 (Next)
-- [ ] Trade Executor service for order execution
+### v1.1.0 (Current - 2025-01-15)
+- ✅ Trade Executor service for order execution
+- ✅ Trade confirmation tracking
+- ✅ Rate limiting and safety checks
+- ✅ Integration tests for complete flow
+
+### v1.2.0 (Next)
 - [ ] Treasury module for P&L tracking
+- [ ] Web dashboard for risk visualization
 - [ ] Advanced hedging strategies
 - [ ] Multi-exchange support
 
