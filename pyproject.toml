@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hedgelock"
-version = "1.0.0"
+version = "1.1.0"
 description = "Event-driven trading risk management system with automated hedging"
 authors = ["Alessio Rocchi <your.email@example.com>"]
 readme = "README.md"
