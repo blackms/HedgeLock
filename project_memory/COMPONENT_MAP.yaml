@@ -21,6 +21,10 @@ components:
       risk_state: "Processed risk calculations and alerts"
       hedge_trades: "Hedge trade instructions for execution"
       trade_confirmations: "Executed trade confirmations with fill details"
+      position_states: "Current position snapshots"
+      market_data: "Price updates and market data"
+      profit_taking: "Profit taking decisions"
+      emergency_actions: "Emergency position actions"
     last_updated: "2025-07-07"
     sprint: "HL-06-1"
     
@@ -172,6 +176,33 @@ components:
     sprint: "HL-06-7, HL-08-8"
     last_updated: "2025-07-15"
     
+  position_manager:
+    status: "INTEGRATED"
+    implementation_files: [
+      "src/hedgelock/position_manager/__init__.py",
+      "src/hedgelock/position_manager/models.py",
+      "src/hedgelock/position_manager/manager.py",
+      "src/hedgelock/position_manager/service.py",
+      "src/hedgelock/position_manager/api.py",
+      "src/hedgelock/position_manager/main.py",
+      "docker/Dockerfile.position-manager",
+      "tests/integration/position_manager/test_position_manager.py"
+    ]
+    integration_files: ["consumer from funding_context and market_data", "producer to hedge_trades", "Trade Executor"]
+    integration_todos: []
+    business_impact: "Core delta-neutral trading engine with volatility-based hedging"
+    features:
+      - "Delta-neutral position management (Δ = Q_B + Q_L - Q_S)"
+      - "Volatility-based hedge ratios (20%-60%)"
+      - "Profit target calculation (PT = k*σ)"
+      - "Trailing stop loss (30% of peak PnL)"
+      - "Funding-aware position scaling"
+      - "Emergency position closure on extreme funding"
+      - "Real-time position state tracking"
+    sprint: "Phase1-Sprint1"
+    last_updated: "2025-07-16"
+    notes: "Position Manager v1.0 - Core trading logic implementation"
+
   treasury_module:
     status: "NOT_IMPLEMENTED"
     implementation_files: []

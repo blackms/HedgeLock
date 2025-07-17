@@ -55,7 +55,7 @@ services:
     volumes:
       - ./tests:/app/tests
       - ./src:/app/src
-    command: pytest tests/integration/funding/ -v --tb=short
+    command: pytest tests/integration/ -v --tb=short
     networks:
       - test-network
 

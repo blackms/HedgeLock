@@ -1,9 +1,9 @@
 project:
   name: "HedgeLock: Funding-Aware Volatility Harvesting System"
-  current_version: "v1.2.0"
+  current_version: "v1.3.0-dev"
   description: "Event-driven trading system with funding rate awareness for volatility harvesting and automated hedging"
-  release_date: "2025-07-15"
-  release_status: "RELEASED"
+  release_date: "In Development"
+  release_status: "DEVELOPMENT"
 
 architecture:
   type: "Event-driven microservices with Kafka"
@@ -17,17 +17,17 @@ architecture:
 
 current_status:
   completed_sprints: ["HL-06", "HL-07", "HL-08"]
-  active_sprint: null
-  integration_debt: "None - all components integrated"
-  sprint_planning: "See SPRINT_PLANNING.yaml for upcoming sprint tasks HL-09 and beyond"
-  release_notes: "v1.2.0 released with complete Funding Awareness - system now implements original vision"
+  active_sprint: "Phase1-Sprint1"
+  integration_debt: "Position Manager needs integration with market data source"
+  sprint_planning: "Implementing core trading engine from v0.3 specification"
+  release_notes: "v1.3.0-dev adds Position Manager for delta-neutral trading"
 
 critical_context:
-  current_focus: "Funding Awareness implemented - system now realizes original vision"
+  current_focus: "Implementing core trading engine (Phase 1 of v2.0 roadmap)"
   major_gaps: 
-    - "Treasury module for P&L tracking not implemented"
-    - "No web dashboard for risk visualization"
-    - "Single exchange support (Bybit only)"
+    - "Delta-neutral trading logic (45% → 60% with Position Manager)"
+    - "Loan & reserve management not implemented"
+    - "Safety features and liquidation protection missing"
   common_mistakes: "Building collectors without downstream consumers"
   achievements:
     - "Complete data pipeline from collection to hedge decisions"
@@ -36,6 +36,7 @@ critical_context:
     - "Trade Executor implemented - system can now execute real trades"
     - "Funding Awareness implemented - position sizing based on funding costs"
     - "Emergency exit system for extreme funding conditions"
+    - "Position Manager implemented - delta-neutral trading logic"
   
 business_impact:
   primary_goal: "Funding-aware volatility harvesting with automated risk management"

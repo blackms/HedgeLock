@@ -1,0 +1,9 @@
+FROM hedgelock-base:latest
+
+EXPOSE 8009
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8009/health || exit 1
+
+CMD ["python", "-m", "uvicorn", "hedgelock.position_manager.api:app", \
+     "--host", "0.0.0.0", "--port", "8009"]

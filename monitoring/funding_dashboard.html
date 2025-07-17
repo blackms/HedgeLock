@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HedgeLock Funding Monitor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #58a6ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            color: #8b949e;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .funding-table {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #21262d;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #f0f6fc;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #21262d;
+        }
+        
+        tr:hover {
+            background: #1c2128;
+        }
+        
+        .regime-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .regime-neutral { background: #1f6feb; color: white; }
+        .regime-normal { background: #2ea043; color: white; }
+        .regime-heated { background: #fb8500; color: white; }
+        .regime-mania { background: #da3633; color: white; }
+        .regime-extreme { 
+            background: #ff0000; 
+            color: white; 
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+        
+        .multiplier {
+            font-family: monospace;
+            font-weight: bold;
+        }
+        
+        .multiplier-high { color: #2ea043; }
+        .multiplier-medium { color: #fb8500; }
+        .multiplier-low { color: #da3633; }
+        .multiplier-zero { color: #ff0000; font-weight: bold; }
+        
+        .action-maintain { color: #58a6ff; }
+        .action-reduce { color: #fb8500; }
+        .action-exit { 
+            color: #ff0000; 
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .rate-low { color: #2ea043; }
+        .rate-medium { color: #fb8500; }
+        .rate-high { color: #da3633; }
+        .rate-extreme { color: #ff0000; font-weight: bold; }
+        
+        .refresh-info {
+            text-align: center;
+            color: #8b949e;
+            margin-top: 20px;
+        }
+        
+        .error-message {
+            background: #da3633;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 HedgeLock Funding Awareness Monitor</h1>
+        
+        <div id="error-container"></div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Active Symbols</h3>
+                <p class="stat-value" id="active-symbols">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Extreme Regimes</h3>
+                <p class="stat-value" id="extreme-count" style="color: #da3633;">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Reduced Positions</h3>
+                <p class="stat-value" id="reduced-count" style="color: #fb8500;">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Last Update</h3>
+                <p class="stat-value" id="last-update" style="font-size: 18px;">Never</p>
+            </div>
+        </div>
+        
+        <div class="funding-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Funding Rate (APR)</th>
+                        <th>Regime</th>
+                        <th>Position Multiplier</th>
+                        <th>Action</th>
+                        <th>Daily Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="funding-tbody">
+                    <tr class="loading">
+                        <td colspan="6">Loading funding data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="refresh-info">
+            Auto-refreshing every 2 seconds | 
+            <a href="http://localhost:8080" target="_blank" style="color: #58a6ff;">Open Kafka UI</a> |
+            <a href="http://localhost:8005/status" target="_blank" style="color: #58a6ff;">Funding Engine Status</a>
+        </div>
+    </div>
+
+    <script>
+        let lastUpdate = null;
+
+        function getRegimeClass(regime) {
+            return `regime-${regime.toLowerCase()}`;
+        }
+
+        function getMultiplierClass(multiplier) {
+            if (multiplier === 0) return 'multiplier-zero';
+            if (multiplier < 0.3) return 'multiplier-low';
+            if (multiplier < 0.7) return 'multiplier-medium';
+            return 'multiplier-high';
+        }
+
+        function getRateClass(rate) {
+            if (rate > 300) return 'rate-extreme';
+            if (rate > 100) return 'rate-high';
+            if (rate > 50) return 'rate-medium';
+            return 'rate-low';
+        }
+
+        function getActionClass(action, shouldExit) {
+            if (shouldExit || action === 'emergency_exit') return 'action-exit';
+            if (action === 'reduce_position') return 'action-reduce';
+            return 'action-maintain';
+        }
+
+        function formatAction(action, shouldExit) {
+            if (shouldExit || action === 'emergency_exit') return '⚠️ EMERGENCY EXIT';
+            if (action === 'reduce_position') return '📉 Reduce Position';
+            if (action === 'increase_position') return '📈 Increase Position';
+            return '✓ Maintain';
+        }
+
+        async function fetchFundingStatus() {
+            try {
+                const response = await fetch('http://localhost:8005/status');
+                if (!response.ok) throw new Error('Failed to fetch funding status');
+                
+                const data = await response.json();
+                updateDashboard(data);
+                document.getElementById('error-container').innerHTML = '';
+            } catch (error) {
+                console.error('Error fetching funding status:', error);
+                document.getElementById('error-container').innerHTML = 
+                    '<div class="error-message">Unable to connect to Funding Engine. Make sure services are running.</div>';
+            }
+        }
+
+        function updateDashboard(data) {
+            const contexts = data.contexts || {};
+            const symbols = Object.keys(contexts);
+            
+            // Update stats
+            document.getElementById('active-symbols').textContent = symbols.length;
+            
+            const extremeCount = symbols.filter(s => contexts[s].regime === 'extreme').length;
+            document.getElementById('extreme-count').textContent = extremeCount;
+            
+            const reducedCount = symbols.filter(s => contexts[s].multiplier < 1.0).length;
+            document.getElementById('reduced-count').textContent = reducedCount;
+            
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            
+            // Update table
+            const tbody = document.getElementById('funding-tbody');
+            
+            if (symbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #8b949e;">No funding data available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = symbols.map(symbol => {
+                const ctx = contexts[symbol];
+                const rate = parseFloat(ctx.current_rate);
+                const multiplier = ctx.multiplier;
+                const shouldExit = ctx.should_exit;
+                const dailyCost = ctx.daily_cost_bps || 0;
+                
+                return `
+                    <tr>
+                        <td style="font-weight: bold;">${symbol}</td>
+                        <td class="${getRateClass(rate)}">${rate.toFixed(1)}%</td>
+                        <td><span class="regime-badge ${getRegimeClass(ctx.regime)}">${ctx.regime}</span></td>
+                        <td class="multiplier ${getMultiplierClass(multiplier)}">${multiplier.toFixed(2)}</td>
+                        <td class="${getActionClass('', shouldExit)}">${formatAction('', shouldExit)}</td>
+                        <td>${dailyCost.toFixed(1)} bps</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Initial fetch
+        fetchFundingStatus();
+
+        // Auto-refresh every 2 seconds
+        setInterval(fetchFundingStatus, 2000);
+    </script>
+</body>
+</html>

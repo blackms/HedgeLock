@@ -1,0 +1,14 @@
+{
+  "service": "test-collector",
+  "funding_rate": {
+    "symbol": "BTCUSDT",
+    "funding_rate": 0.0025,
+    "funding_time": "2025-01-16T12:00:00Z",
+    "mark_price": 50000.0,
+    "index_price": 49900.0,
+    "daily_rate": 0.0075,
+    "annualized_rate": 273.75
+  },
+  "trace_id": "test-001",
+  "timestamp": "2025-01-16T12:00:00Z"
+}

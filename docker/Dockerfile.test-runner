@@ -1,0 +1,18 @@
+FROM hedgelock-base:latest
+
+# Switch to root to install test dependencies
+USER root
+
+# Install test dependencies
+RUN pip install pytest pytest-asyncio pytest-cov
+
+# Switch back to hedgelock user
+USER hedgelock
+
+WORKDIR /app
+
+# Set Python path
+ENV PYTHONPATH=/app/src:$PYTHONPATH
+
+# Default command
+CMD ["python", "-m", "pytest", "tests/unit/position_manager/", "-v"]

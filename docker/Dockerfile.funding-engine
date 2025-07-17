@@ -1,28 +1,13 @@
 # Funding Engine Dockerfile
-FROM python:3.11-slim
+FROM hedgelock-base:latest
 
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy source code
-COPY src/ ./src/
-
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-
-# Expose port
+# Override default port
 EXPOSE 8005
 
-# Run the service
+# Override health check for funding engine specific port
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8005/health || exit 1
+
+# Run the funding engine service
 CMD ["python", "-m", "uvicorn", "src.hedgelock.funding_engine.api:app", \
      "--host", "0.0.0.0", "--port", "8005"]

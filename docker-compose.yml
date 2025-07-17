@@ -10,7 +10,7 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-collector
       - LOG_LEVEL=INFO
-      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
       - BYBIT_API_KEY=${BYBIT_API_KEY:-}
       - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
       - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
@@ -23,7 +23,7 @@ services:
     depends_on:
       - kafka
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -37,7 +37,7 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-risk-engine
       - LOG_LEVEL=INFO
-      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
       - RISK__LTV_NORMAL_THRESHOLD=0.5
       - RISK__LTV_CAUTION_THRESHOLD=0.65
       - RISK__LTV_DANGER_THRESHOLD=0.8
@@ -45,7 +45,7 @@ services:
       - MONITORING__METRICS_PORT=9090
     ports:
       - "8002:8002"
-      - "9092:9090"
+      - "9192:9090"  # Changed from 9092 to 9192 to avoid conflict
     networks:
       - hedgelock-network
     depends_on:
@@ -53,7 +53,7 @@ services:
       - redis
       - postgres
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8002/stats"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -67,12 +67,10 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-hedger
       - LOG_LEVEL=INFO
-      - KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
       - BYBIT_API_KEY=${BYBIT_API_KEY:-}
       - BYBIT_API_SECRET=${BYBIT_API_SECRET:-}
       - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
-      - HEDGER__MAX_ORDER_SIZE_BTC=10.0
-      - HEDGER__MAX_POSITION_SIZE_BTC=50.0
       - MONITORING__METRICS_PORT=9090
     ports:
       - "8003:8003"
@@ -83,7 +81,7 @@ services:
       - kafka
       - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8003/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -97,7 +95,7 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-trade-executor
       - LOG_LEVEL=INFO
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - KAFKA_CONSUMER_GROUP=trade-executor-group
       - KAFKA_TOPIC_HEDGE_TRADES=hedge_trades
       - KAFKA_TOPIC_TRADE_CONFIRMATIONS=trade_confirmations
@@ -116,7 +114,7 @@ services:
       - kafka
       - hedger
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8004/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -130,7 +128,7 @@ services:
     environment:
       - SERVICE_NAME=hedgelock-funding-engine
       - LOG_LEVEL=INFO
-      - FUNDING_ENGINE_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - FUNDING_ENGINE_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - FUNDING_ENGINE_CONSUMER_GROUP_ID=funding-engine-group
       - FUNDING_ENGINE_FUNDING_RATES_TOPIC=funding_rates
       - FUNDING_ENGINE_FUNDING_CONTEXT_TOPIC=funding_context
@@ -145,9 +143,12 @@ services:
     networks:
       - hedgelock-network
     depends_on:
-      - kafka
-      - redis
-      - collector
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      collector:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
       interval: 30s
@@ -169,13 +170,39 @@ services:
       - MIN_BUFFER_PERCENT=5
       - MAX_SINGLE_OPERATION_USD=10000
     ports:
-      - "8004:8000"
+      - "8007:8000"
     networks:
       - hedgelock-network
     depends_on:
       - postgres
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  position-manager:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.position-manager
+    container_name: hedgelock-position-manager
+    environment:
+      - SERVICE_NAME=position-manager
+      - LOG_LEVEL=INFO
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
+      - MONITORING__METRICS_PORT=9096
+    ports:
+      - "8009:8009"
+      - "9096:9096"
+    networks:
+      - hedgelock-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+      funding-engine:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -195,7 +222,7 @@ services:
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
     ports:
-      - "8006:8000"
+      - "8008:8000"
     networks:
       - hedgelock-network
     depends_on:
@@ -331,6 +358,10 @@ services:
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic funding_rates --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic funding_context --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic treasury_actions --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic position_states --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic market_data --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic profit_taking --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic emergency_actions --partitions 3 --replication-factor 1
       
       echo 'Listing all topics:'
       kafka-topics --bootstrap-server kafka:29092 --list

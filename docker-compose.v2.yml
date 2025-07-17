@@ -1,0 +1,206 @@
+version: '3.8'
+
+services:
+  # Infrastructure
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: hedgelock-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - hedgelock-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: hedgelock-kafka-1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - hedgelock-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: hedgelock-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - hedgelock-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: hedgelock-postgres
+    environment:
+      POSTGRES_DB: hedgelock
+      POSTGRES_USER: hedgelock
+      POSTGRES_PASSWORD: hedgelock123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - hedgelock-network
+
+  # Core Services (v1.x)
+  collector:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.collector
+    container_name: hedgelock-collector
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - BYBIT_API_KEY=${BYBIT_API_KEY}
+      - BYBIT_API_SECRET=${BYBIT_API_SECRET}
+      - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
+    depends_on:
+      - kafka
+    networks:
+      - hedgelock-network
+
+  funding-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.funding-engine
+    container_name: hedgelock-funding-engine
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - hedgelock-network
+
+  risk-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.risk-engine
+    container_name: hedgelock-risk-engine
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - kafka
+    networks:
+      - hedgelock-network
+
+  trade-executor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.trade-executor
+    container_name: hedgelock-trade-executor
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - BYBIT_API_KEY=${BYBIT_API_KEY}
+      - BYBIT_API_SECRET=${BYBIT_API_SECRET}
+      - BYBIT_TESTNET=${BYBIT_TESTNET:-true}
+    depends_on:
+      - kafka
+    networks:
+      - hedgelock-network
+
+  # New Services (v2.0)
+  position-manager:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.position-manager
+    container_name: hedgelock-position-manager
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://hedgelock:hedgelock123@postgres:5432/hedgelock
+    depends_on:
+      - kafka
+      - redis
+      - postgres
+    ports:
+      - "8009:8009"
+    networks:
+      - hedgelock-network
+
+  loan-manager:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.loan-manager
+    container_name: hedgelock-loan-manager
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - kafka
+    ports:
+      - "8010:8010"
+    networks:
+      - hedgelock-network
+
+  reserve-manager:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.reserve-manager
+    container_name: hedgelock-reserve-manager
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - kafka
+    ports:
+      - "8011:8011"
+    networks:
+      - hedgelock-network
+
+  safety-manager:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.safety-manager
+    container_name: hedgelock-safety-manager
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - kafka
+    ports:
+      - "8012:8012"
+    networks:
+      - hedgelock-network
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hedgelock-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - hedgelock-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hedgelock-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - hedgelock-network
+
+volumes:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  hedgelock-network:
+    driver: bridge

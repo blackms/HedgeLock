@@ -4,19 +4,22 @@ Data models for the collector service.
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Optional
 from enum import Enum
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class PositionSide(str, Enum):
     """Position side."""
+
     BUY = "Buy"
     SELL = "Sell"
 
 
 class OrderStatus(str, Enum):
     """Order status."""
+
     NEW = "New"
     PARTIALLY_FILLED = "PartiallyFilled"
     FILLED = "Filled"
@@ -26,6 +29,7 @@ class OrderStatus(str, Enum):
 
 class Position(BaseModel):
     """Position data model."""
+
     symbol: str
     side: PositionSide
     size: Decimal
@@ -41,22 +45,25 @@ class Position(BaseModel):
 
 class Balance(BaseModel):
     """Balance data model."""
+
     coin: str
     wallet_balance: Decimal
     available_balance: Decimal
-    
-    
+
+
 class CollateralInfo(BaseModel):
     """Collateral information."""
+
     ltv: Decimal = Field(description="Loan-to-Value ratio")
     collateral_value: Decimal = Field(description="Total collateral value in USD")
     borrowed_amount: Decimal = Field(description="Total borrowed amount in USD")
     collateral_ratio: Decimal = Field(description="Collateral ratio")
     free_collateral: Decimal = Field(description="Free collateral in USD")
-    
+
 
 class LoanInfo(BaseModel):
     """Loan information."""
+
     loan_currency: str
     loan_amount: Decimal
     collateral_currency: str
@@ -64,10 +71,11 @@ class LoanInfo(BaseModel):
     hourly_interest_rate: Decimal
     loan_term: Optional[int] = Field(None, description="Loan term in days")
     loan_order_id: str
-    
+
 
 class AccountUpdate(BaseModel):
     """Account update message for Kafka."""
+
     timestamp: datetime
     account_id: str
     balances: Dict[str, Balance]
@@ -75,10 +83,11 @@ class AccountUpdate(BaseModel):
     collateral_info: CollateralInfo
     loan_info: Optional[LoanInfo] = None
     source: str = "collector"
-    
+
 
 class MarketData(BaseModel):
     """Market data message for Kafka."""
+
     timestamp: datetime
     symbol: str
     price: Decimal
@@ -92,6 +101,7 @@ class MarketData(BaseModel):
 
 class OrderUpdate(BaseModel):
     """Order update message."""
+
     timestamp: datetime
     order_id: str
     symbol: str
