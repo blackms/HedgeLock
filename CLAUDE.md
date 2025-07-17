@@ -5,7 +5,8 @@ This file contains critical rules for AI assistants working on the HedgeLock cod
 ## Project Context
 - **Project**: HedgeLock - Event-driven trading risk management system
 - **Stack**: Python FastAPI microservices with Apache Kafka
-- **Version**: 1.0.0
+- **Version**: 2.0.0-dev
+- **Current Phase**: System integration and production preparation
 
 ## CRITICAL RULES (MUST FOLLOW)
 
@@ -63,19 +64,38 @@ make logs-{service}     # View service logs
 
 ### Verification Checklist
 - [ ] All tests pass: `make test && make lint`
-- [ ] Services healthy: `curl http://localhost:800{1-5}/health`
+- [ ] Core services healthy: `curl http://localhost:800{1-6}/health`
+- [ ] New services healthy: `curl http://localhost:80{09-12}/health`
 - [ ] No errors in logs: `make compose-logs | grep ERROR`
 - [ ] Kafka topics active: `make kafka-topics`
 
 ## PROJECT STRUCTURE
 ```
 src/hedgelock/
-├── collector/     # Market data collection
-├── monitor/       # Risk monitoring
-├── executor/      # Trade execution
-├── api_gateway/   # API gateway
-└── shared/        # Shared utilities
+├── collector/         # Market data collection (8001)
+├── funding_engine/    # Funding rate analysis (8002)
+├── risk_engine/       # Risk calculations (8003)
+├── hedger/           # Hedge decisions (8004)
+├── treasury/         # Fund management (8005)
+├── trade_executor/   # Trade execution (8006)
+├── alert/            # Notifications (8007)
+├── position_manager/  # Delta-neutral trading (8009) [NEW v2.0]
+├── loan_manager/     # Loan tracking & repayment (8010) [NEW v2.0]
+├── reserve_manager/  # Reserve deployment (8011) [NEW v2.0]
+├── safety_manager/   # System safety & monitoring (8012) [NEW v2.0]
+└── shared/           # Shared utilities
 ```
+
+## v2.0 NEW FEATURES
+- **Position Manager**: Maintains delta-neutral positions with profit targets
+- **Loan Manager**: Auto-repays loan from profits, monitors LTV
+- **Reserve Manager**: Deploys USDC reserves based on risk levels
+- **Safety Manager**: Liquidation protection, circuit breakers, dead man's switch
+
+## EMERGENCY PROCEDURES
+- Emergency docs: `docs/EMERGENCY_PROCEDURES.md`
+- Halt trading: `curl -X POST http://localhost:8012/emergency-action/manual -d '{"action": "halt_trading"}'`
+- Check safety: `curl http://localhost:8012/safety/state`
 
 ## REMEMBER
 - Always use structured logging with trace_id
@@ -83,3 +103,4 @@ src/hedgelock/
 - Update PROJECT_MEMORY.yaml after significant changes
 - Follow existing patterns in src/hedgelock/
 - Never commit without running tests
+- Monitor Safety Manager alerts continuously in production
