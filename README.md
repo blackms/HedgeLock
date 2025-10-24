@@ -1,26 +1,46 @@
-# HedgeLock - Funding-Aware Volatility Harvesting System
+# HedgeLock — Funding-Aware Volatility Harvesting System
 
 [![CI/CD Pipeline](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml/badge.svg)](https://github.com/blackms/HedgeLock/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/blackms/HedgeLock/branch/main/graph/badge.svg?token=f6b6c943-5a31-4967-8c30-003de02a6907)](https://codecov.io/gh/blackms/HedgeLock)
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/blackms/HedgeLock/releases)
 
-A sophisticated volatility harvesting system that leverages funding rate inefficiencies while maintaining automated risk management. The system continuously monitors funding rates, adjusts position sizes based on funding costs, and executes funding-aware hedge trades.
+> ⚡ **HedgeLock** hunts for funding-rate edge, automates portfolio defense, and keeps operators in the loop with rich telemetry.<br/>
+> 🔐 Built for safety-first quant experimentation with explicit risk guardrails.<br/>
+> 🛰️ Modular microservices, Kafka glue, Prometheus/Grafana visibility.
+
+## 🔗 Contents
+- [Features](#-features)
+- [System Architecture](#-system-architecture)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [Services](#-services)
+- [Testing](#-testing)
+- [Monitoring](#-monitoring)
+- [Roadmap](#-roadmap)
+- [Documentation](#-documentation)
+- [Contributing](#-contributing)
 
 ## 🚀 Features
 
 ### Core Capabilities
-- **Funding Rate Awareness**: Real-time monitoring and regime detection (NEUTRAL → NORMAL → HEATED → MANIA → EXTREME)
-- **Dynamic Position Sizing**: Automatic position multipliers based on funding costs
-- **Emergency Exit System**: Force position closure when funding exceeds 300% APR
-- **Real-time Risk Monitoring**: Continuous LTV and net delta calculation with funding adjustments
-- **Automated Hedging**: Funding-aware hedge order execution
 
-### Technical Features
-- **Event-Driven Architecture**: Kafka-based microservices with <150ms latency
-- **Exchange Integration**: Bybit WebSocket + REST API support with funding data
-- **Production Ready**: Health checks, structured logging, Prometheus metrics
-- **Resilient Design**: Automatic reconnection, error recovery, message deduplication
-- **100% Test Coverage**: Comprehensive unit and integration tests with CI/CD pipeline
+| Capability | Why it matters |
+| ---------- | -------------- |
+| **Funding Rate Awareness** | Regime detection (NEUTRAL → NORMAL → HEATED → MANIA → EXTREME) drives timing on hedges. |
+| **Dynamic Position Sizing** | Position multipliers expand/contract exposure as funding costs change. |
+| **Emergency Exit System** | Auto-flips positions when funding blows past 300% APR to stop the bleed. |
+| **Real-time Risk Monitoring** | Continuous LTV + delta tracking ensures leverage stays inside guardrails. |
+| **Automated Hedging** | Generates hedge orders and pipelines them to the executor with traceability. |
+
+### Technical Highlights
+- **Event-Driven Everything**: Kafka topics glue microservices together with sub-150 ms latency.
+- **Exchange Integration**: Bybit WebSocket + REST adapters power live market context.
+- **Operational Hygiene**: Health/ready endpoints, JSON logging, Prometheus metrics per service.
+- **Resilience-first**: Auto-reconnect, idempotent consumers, message dedupe, replay-safe processors.
+- **CI Discipline**: Unit + integration suites, coverage reporting, and GitHub Actions gating.
+
+### Tech Stack
+`Python 3.11` · `FastAPI` · `Kafka` · `Bybit APIs` · `Prometheus` · `Grafana` · `Docker Compose` · `pytest`
 
 ## 📊 System Architecture
 
@@ -48,7 +68,6 @@ graph LR
 4. **Hedger**: Applies funding-based position multipliers to hedge decisions
 5. **Trade Executor**: Executes trades on exchange with confirmation tracking
 
-
 ## 🏗️ Quick Start
 
 ### Prerequisites
@@ -57,26 +76,26 @@ graph LR
 - Python 3.11+
 - Bybit testnet account (optional)
 
-### Local Development
+### Local Development Flow
 
-1. **Clone the repository**
+1. **Clone & enter**
    ```bash
    git clone https://github.com/blackms/HedgeLock.git
    cd HedgeLock
    ```
 
-2. **Set up environment**
+2. **Bootstrap environment**
    ```bash
    cp .env.example .env
    # Edit .env with your Bybit API credentials (optional)
    ```
 
-3. **Start the system**
+3. **Launch the stack**
    ```bash
    docker-compose up -d
    ```
 
-4. **Verify services are healthy**
+4. **Smoke-test services**
    ```bash
    curl http://localhost:8001/healthz  # Collector
    curl http://localhost:8002/healthz  # Risk Engine
@@ -84,10 +103,16 @@ graph LR
    curl http://localhost:8004/healthz  # Trade Executor
    ```
 
-5. **Monitor Kafka topics**
+5. **Peek at the bus**
    ```bash
-   # Access Kafka UI at http://localhost:8080
+   open http://localhost:8080  # Kafka UI via docker-compose
    ```
+
+### Command Palette
+- `./run_all_tests.sh` — full validation sweep (unit + integration).
+- `./run_core_tests.sh` — tight loop for critical flows.
+- `make docker-build` (or service-specific Dockerfiles) — container builds.
+- `./scripts/run_collector_soak_test.sh` — stress the collector for 5 min.
 
 ## 🔧 Configuration
 
@@ -152,10 +177,11 @@ poetry run pytest tests/integration/
 
 ## 📈 Monitoring
 
-- **Prometheus Metrics**: Each service exposes metrics on port 909X
-- **Health Endpoints**: `/healthz` and `/ready` on each service
-- **Structured Logs**: JSON format with trace IDs for correlation
-- **Kafka UI**: Monitor topics and consumer lag at http://localhost:8080
+- **Prometheus Metrics**: Service-specific ports (909X range) for scrape targets.
+- **Grafana Dashboards**: Import dashboards in `monitoring/grafana/dashboards/*.json`.
+- **Health Probes**: `/healthz` + `/ready` endpoints across services.
+- **Logs**: JSON lines with trace IDs to follow end-to-end flows.
+- **Kafka UI**: http://localhost:8080 keeps eyes on lag and payloads.
 
 ## 🗺️ Roadmap
 
